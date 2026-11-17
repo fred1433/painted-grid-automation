@@ -1,0 +1,7 @@
+{"at":"2026-11-17T15:55:54.2022699Z","evt":"created","data":{"seed":141,"flags":[],"rows":41}}
+{"at":"2026-11-17T15:55:54.2099471Z","evt":"started","data":{"pid":1864,"loaded":false,"rows":41}}
+{"at":"2026-11-17T15:55:58.6093498Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T15:56:02.6228603Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T15:56:03.0164701Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
+{"at":"2026-11-17T15:56:03.7774565Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Maple Courier","amount_cents":285807,"date":"2026-03-31","memo":"OP-006625B8"}}
+{"at":"2026-11-17T15:56:06.4350777Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}

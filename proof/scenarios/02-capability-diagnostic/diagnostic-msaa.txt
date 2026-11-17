@@ -1,0 +1,1 @@
+AccessibleObjectFromWindow ok: role=10 name='' accChildCount=0

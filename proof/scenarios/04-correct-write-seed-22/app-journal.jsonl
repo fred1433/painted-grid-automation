@@ -1,0 +1,8 @@
+{"at":"2026-11-17T15:52:45.1752144Z","evt":"created","data":{"seed":22,"flags":[],"rows":41}}
+{"at":"2026-11-17T15:52:45.1818844Z","evt":"started","data":{"pid":7980,"loaded":false,"rows":41}}
+{"at":"2026-11-17T15:52:49.6604750Z","evt":"selection_changed","data":{"tx":"TX-0037","source":"mouse"}}
+{"at":"2026-11-17T15:52:52.8624056Z","evt":"selection_changed","data":{"tx":"TX-0037","source":"mouse"}}
+{"at":"2026-11-17T15:52:53.2119688Z","evt":"dialog_opened","data":{"tx":"TX-0037","invoice_ref":"INV-1037"}}
+{"at":"2026-11-17T15:52:54.0148355Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0037","invoice_ref":"INV-1037","account":"Alder Office","amount_cents":342252,"date":"2026-03-31","memo":"OP-814D35B1"}}
+{"at":"2026-11-17T15:52:56.6771857Z","evt":"selection_changed","data":{"tx":"TX-0037","source":"mouse"}}
+{"at":"2026-11-17T15:52:59.5050934Z","evt":"selection_changed","data":{"tx":"TX-0037","source":"mouse"}}

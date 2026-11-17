@@ -1,0 +1,6 @@
+current mode 1024x768
+mode 1920x1080 is listed
+ChangeDisplaySettings 1920x1080: 0 (0 = success)
+QueryDisplayConfig: 0, 1 path(s)
+get dpi scale: 0; min 0 cur 0 max 3; recommended scale 1.00x, current 1.00x
+set dpi scale relative 2: 0; GetDpiForMonitor now 144

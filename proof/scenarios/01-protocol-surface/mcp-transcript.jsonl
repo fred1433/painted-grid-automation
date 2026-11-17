@@ -1,0 +1,16 @@
+{"at":"2026-11-17T15:52:19.8370791Z","note":"MCP server started"}
+{"at":"2026-11-17T15:52:19.9063039Z","check":"tools/list returns exactly: execute_payment, find_row, inspect_grid, operation_status, prepare_payment","ok":true}
+{"at":"2026-11-17T15:52:19.9103308Z","check":"no select_row tool and no approval tool is exposed","ok":true}
+{"at":"2026-11-17T15:52:19.9106158Z","check":"execute_payment is annotated destructive (a hint only; enforcement is at run time)","ok":true}
+{"at":"2026-11-17T15:52:19.9106936Z","check":"inspect_grid is annotated read-only","ok":true}
+{"at":"2026-11-17T15:52:20.1946072Z","request":{"tool":"find_row","arguments":{"amount":"1.000,00"}},"ms":281,"is_error":true,"response":{"ok":false,"code":"INVALID_ARGUMENT","message":"amount \u00271.000,00\u0027 is not in the strict form 1,234.56","decision":{"step":"find_row","methods":[],"observations":["route lock acquired after 0 ms"],"candidates":null,"discriminant":null,"criteria_met":[],"refusal_code":"INVALID_ARGUMENT","refusal_reason":"amount \u00271.000,00\u0027 is not in the strict form 1,234.56","captures":[]}}}
+{"at":"2026-11-17T15:52:20.2051916Z","check":"a malformed amount returns a structured error INVALID_ARGUMENT","ok":true}
+{"at":"2026-11-17T15:52:20.2120981Z","request":{"tool":"operation_status","arguments":{"operation_id":"OP-00000000"}},"ms":6,"is_error":true,"response":{"ok":false,"code":"OPERATION_NOT_FOUND","message":"no operation OP-00000000","decision":{"step":"operation_status","methods":[],"observations":["route lock acquired after 0 ms"],"candidates":null,"discriminant":null,"criteria_met":[],"refusal_code":"OPERATION_NOT_FOUND","refusal_reason":"no operation OP-00000000","captures":[]}}}
+{"at":"2026-11-17T15:52:20.2122237Z","check":"an unknown operation id returns OPERATION_NOT_FOUND","ok":true}
+{"at":"2026-11-17T15:52:20.2405085Z","note":"select_row call rejected: McpProtocolException: Request failed (remote): Unknown tool: \u0027select_row\u0027"}
+{"at":"2026-11-17T15:52:20.2420975Z","check":"calling a tool that does not exist (select_row) is rejected","ok":true}
+{"at":"2026-11-17T15:52:20.2449606Z","note":"prepare_payment without account: An error occurred invoking \u0027prepare_payment\u0027."}
+{"at":"2026-11-17T15:52:20.2450430Z","check":"prepare_payment without its required account argument is rejected","ok":true}
+{"at":"2026-11-17T15:52:20.2972185Z","note":"MCP server stopped"}
+{"at":"2026-11-17T15:52:24.8419073Z","check":"raw stdio: 3 stdout lines, every one a JSON-RPC 2.0 message","ok":true}
+{"at":"2026-11-17T15:52:24.8420893Z","check":"server logs went to stderr (server_start found there, not on stdout)","ok":true}

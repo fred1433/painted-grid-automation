@@ -6,12 +6,12 @@ A prototype, not a production reference. Synthetic data only. No model is called
 
 ![One minute of the published run: real captures from the Windows runner, with the requested id, the observed id, the state and the reason under each one](proof/proof.gif)
 
-Everything above and below comes from one GitHub Actions run on a hosted `windows-2025` runner: real desktop, real `CopyFromScreen` captures, real `SendInput` clicks and keys.
+The evidence comes from one GitHub Actions run on hosted `windows-2025` runners: real desktop, real `CopyFromScreen` captures, real `SendInput` clicks and keys, a separate MCP client process.
 
-- Run: {{RUN_URL}}
-- Commit: `{{SHA}}`
+- Run: [windows-proof run 44118974264](https://github.com/fred1433/painted-grid-automation/actions/runs/44118974264) (three jobs green: `proof`, `dpi-150`, `run-demo-script`)
+- Commit: `7248e4363b3d2a3d7ca7df33a707c4cfe27a82a9`
 - Evidence, readable without installing anything: [`proof/`](proof/) (summary, MCP transcripts, server step journals, captures, the application's own journal)
-- Replay on a Windows machine with the .NET 8 SDK: `./run-demo.ps1` (all scenarios, about 15 minutes, hands off the mouse) or `./run-demo.ps1 -Only 14`
+- Replay on a Windows machine with the .NET 8 SDK: `./run-demo.ps1` (all scenarios, about five minutes after the build, hands off the mouse and keyboard) or `./run-demo.ps1 -Only 14`
 
 ## Three outcomes, each backed by a test
 
@@ -37,7 +37,16 @@ The application keeps its own `ledger.json` and `journal.jsonl`. Only the tests'
 
 `inspect_grid` asks each path what it really returns on this window and writes the raw dumps next to the step journal ([UIA raw view](proof/scenarios/02-capability-diagnostic/diagnostic-uia-raw.txt), [MSAA](proof/scenarios/02-capability-diagnostic/diagnostic-msaa.txt), [Win32 children](proof/scenarios/02-capability-diagnostic/diagnostic-win32-children.txt)). In the published run:
 
-{{DIAG_TABLE}}
+| Path | Surface | Result | What it returned |
+|---|---|---|---|
+| UIA | grid | `NOT_AVAILABLE` | Pane 'ledgerGrid' raw children=0 patterns=[] |
+| UIA | toolbar | `NOT_AVAILABLE` | Pane 'toolbar' raw children=0 patterns=[] |
+| UIA | search box | `AVAILABLE` | Edit 'Search ledger' exposes [Value,Text] |
+| MSAA | grid | `NOT_AVAILABLE` | AccessibleObjectFromWindow ok: role=10 name='' accChildCount=0 |
+| Win32 messages | grid | `NOT_AVAILABLE` | 8 child windows; grid class WindowsForms10.Window.8.app.0.30495d1_r3_ad1 is not a list or grid class, so no row-level messages apply; WM_GETTEXT is empty / the grid's scrollbar is a real child window: GetScrollInfo pos=0 max=40 page=21 (scroll position, not row content) |
+| Keyboard | grid and toolbar | `CONFIGURED` | declared by this adapter: Ctrl+P opens the payment dialog for the selected row; F6 toggles the sort; arrow keys move the selection / keyboard is tried before any pixel click on the painted toolbar |
+| Image | grid | `AVAILABLE` | 7 column separators, 21 full rows of 23px, header bottom 25px; columns named from the header: Date, Ref #, Account, Type, Amount, Balance, Status |
+| OCR | grid | `AVAILABLE` | header, reader A (Windows.Media.Ocr en-US): 'Date Ref # Account Type Amount Balance Status' / header, reader B (Tesseract 5.0.0): 'Date Ref # Account Type Amount Balance / Status' |
 
 Rules the code follows:
 
@@ -102,9 +111,38 @@ A token is bound to the operation, the row's `TX-` id, the amount, the currency,
 - The guarantees hold for these tools only. Anything else with access to the same desktop is outside them.
 - The client is a scripted C# MCP client in its own process (`tests/Scenarios`): `tools/list`, calls, structured results and errors. It plays a faulty or repetitive caller (missing token, reused token, the same request after a restart, two calls at once). OCR is local; no model is called. **How Claude itself behaves with these tools is not evaluated here.**
 
+## All scenarios of the published run
+
+| Scenario | What it checks | Result | Checks |
+|---|---|---|---|
+| `01-protocol-surface` | tools/list, annotations, structured errors, stdout carries JSON-RPC only | **PASS** | 10/10 |
+| `02-capability-diagnostic` | UIA, MSAA and Win32 see no rows; image and OCR do; the search box works through UIA | **PASS** | 11/11 |
+| `03-correct-write-seed-21` | one approved payment, verified selection, confirmed postcondition, then no second write | **PASS** | 11/11 |
+| `04-correct-write-seed-22` | same with another seed (row order, window position, column widths) | **PASS** | 11/11 |
+| `05-correct-write-seed-23` | same with a third seed | **PASS** | 11/11 |
+| `06-duplicate-rows` | two rows with identical Account, Type and Amount: Ref # decides, never the first match | **PASS** | 7/7 |
+| `07-target-off-screen` | target below the visible rows: real wheel scrolling, then located again | **PASS** | 5/5 |
+| `08-sort-between-locate-and-write` | the grid is re-sorted after prepare: execute locates again by business identity | **PASS** | 5/5 |
+| `09-parasite-window` | a topmost window covers the grid: no input, operation back to NOT_STARTED | **PASS** | 4/4 |
+| `10-decoy-window` | a window with the same title from another executable is rejected | **PASS** | 4/4 |
+| `11-approval-checks` | missing, foreign, other row, other amount, other process, expired and reused tokens | **PASS** | 13/13 |
+| `12-concurrent-same-approval` | two servers execute with the same token at once: one write | **PASS** | 4/4 |
+| `13-concurrent-two-operations` | two operations at once on one server: serialised, both correct | **PASS** | 5/5 |
+| `14-freeze-after-post` | the app freezes after saving the payment: UNKNOWN, restart, new request refused, one payment | **PASS** | 10/10 |
+| `15-freeze-before-post` | the app freezes before saving: UNKNOWN too (the cost), human reconciliation, then one payment | **PASS** | 8/8 |
+| `16-driver-crash-after-submit` | the server dies between the submit input and its check: IN_FLIGHT becomes UNKNOWN at restart | **PASS** | 5/5 |
+| `17-intent-journal-failure` | the intent cannot be recorded: no input, approval not consumed | **PASS** | 4/4 |
+| `18-ocr-lookalike-glyphs` | an amount drawn with letter O and letter l: refused rather than written | **PASS** | 3/3 |
+| `19-ocr-dropped-group` | one reader reads 1,000.00 as 100.00 (injected): the readers disagree, refused | **PASS** | 3/3 |
+| `20-screen-text-is-data` | a cell that says APPROVE PAYMENT grants nothing | **PASS** | 4/4 |
+| `21-architecture` | driver and server never reference the application or the verifier | **PASS** | 7/7 |
+| `22-dpi-scale` | scaled rendering and DPI-awareness mix between driver and application | **PASS** | 4/4 |
+
+Each scenario folder in [`proof/scenarios/`](proof/scenarios/) holds the MCP transcript (requests, responses, checks), the server's step journal and captures, and the application's own journal that the checks count against.
+
 ## OCR, and what it cannot catch
 
-- Reader A: `Windows.Media.Ocr`, called from the unpackaged executable (the milestone 0 probe in [`probe/`](probe/) showed it works on the runner, with en-US available).
+- Reader A: `Windows.Media.Ocr`, called from the unpackaged executable (the milestone 0 probe in [`probe/`](probe/), [run 44110028913](https://github.com/fred1433/painted-grid-automation/actions/runs/44110028913), showed it works there, with an en-US recognizer installed).
 - Reader B: Tesseract through the `Tesseract` 5.2.0 NuGet package, model `eng.traineddata` from `tessdata_fast` tag 4.1.0, SHA-256 `7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2`, checked by `tools/fetch-tessdata.ps1`.
 - Preparation: crop per cell (or per row for reader A), grey, invert the selected row, stretch the contrast, white margin, upscale x3.
 - An amount is accepted only in the strict form `1,234.56`, when both readers agree, and when the pixels match the value re-drawn. Where a field's format allows only digits, a reader's `O`, `I` or `l` is taken as a digit, then confirmed or refused by the pixels.
@@ -114,7 +152,7 @@ A token is bound to the operation, the row's `TX-` id, the amount, the currency,
 
 ## Display scaling
 
-A second job sets the runner to 1920x1080 with display scaling 1.5 (144 dpi) (`tools/DisplaySetup`: `ChangeDisplaySettings`, then `DisplayConfigSetDeviceInfo` with the undocumented `DISPLAYCONFIG_DEVICE_INFO_SET_DPI_SCALE`, the call the Settings app makes). {{DPI_SENTENCE}} The application is per-monitor v2; the driver is per-monitor v2 and works in physical pixels. The case of a DPI-unaware application stretched by the system at 1.5x was **not demonstrated**.
+A second job sets the runner to 1920x1080 with display scaling 1.5 (144 dpi) (`tools/DisplaySetup`: `ChangeDisplaySettings`, then `DisplayConfigSetDeviceInfo` with the undocumented request type `DISPLAYCONFIG_DEVICE_INFO_SET_DPI_SCALE`). In the published run both calls succeeded, `GetDpiForMonitor` returned 144, and scenario `22` logged `GetDpiForWindow = 144` for the application before preparing and confirming a payment ([setup output](proof/dpi/display-setup.txt), [scenario](proof/dpi/scenarios/22-dpi-scale/)). The application is per-monitor v2; the driver is per-monitor v2 and works in physical pixels. The case of a DPI-unaware application stretched by the system at 1.5x was **not demonstrated**.
 
 ## Chrome
 
@@ -126,7 +164,15 @@ I would use a computer-use agent for supervised exploration: finding where thing
 
 ## What this does not show
 
-{{NOT_DEMONSTRATED}}
+- **A DPI-unaware application stretched by the system** (bitmap scaling at 1.5x): not run. The code has a named fallback for it (`--dpi-unaware --render-scale 1.5`), but the published run took the real 144 dpi path.
+- **Real vendor software.** Everything runs against a witness application written for this. Its visual profile (colours, font, padding) and the `TX-` id on a detail panel are assumptions to check again on a real grid.
+- **A model driving these tools.** The caller is a scripted client. How Claude behaves with them (does it call `find_row` first, does it stop on `UNKNOWN`) is not evaluated.
+- **A locked screen, a disconnected remote session, a second monitor.** `SendInput` and `CopyFromScreen` need an unlocked interactive desktop; none of these were tested.
+- **Two identical payments really wanted** on the same account, amount and date: refused as the same operation.
+- **An OCR error made identically by both readers that also matches the pixels**: not detectable here. In this run every accepted Ref #, Date and Amount matched its re-drawing pixel for pixel (145 checks, 0 differing pixels); the look-alike amount of scenario `18` differed in 220 of 258 ink pixels.
+- **Speed.** Median per call on the runner: `prepare_payment` 3.4 s, `execute_payment` 6.7 s (a full scan, a verified selection, the dialog, a verified read-back). Not optimised.
+- **Long runs**: memory, handle leaks and behaviour over hours were not measured.
+- Chrome and computer use above are opinions, with no code here.
 
 ## Layout
 
@@ -139,7 +185,7 @@ src/LedgerOperator    the human's CLI: approve, show, list, reconcile
 tests/Ledger.Verifier reads the application's own journal; tests only
 tests/Scenarios       scripted MCP client and the scenarios
 tools/                tessdata fetch, display setup for the scaling job, GIF assembly
-probe/                milestone 0: real capture, real click and OCR on the hosted runner, run before anything else
+probe/                milestone 0, run before anything else was built: real capture, real click, OCR on the hosted runner
 proof/                copied from the run's artifacts
 ```
 

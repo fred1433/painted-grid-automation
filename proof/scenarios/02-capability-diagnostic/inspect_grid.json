@@ -1,0 +1,112 @@
+{
+  "ok": true,
+  "result": {
+    "window": {
+      "pid": 5320,
+      "title": "Payables Ledger - Synthetic Co.",
+      "exe": "LedgerApp.exe",
+      "dpi": 96
+    },
+    "readers": "reader A: Windows.Media.Ocr en-US on the whole row; reader B: Tesseract 5.0.0 on each cell",
+    "paths": [
+      {
+        "path": "UIA",
+        "surface": "grid",
+        "result": "NOT_AVAILABLE",
+        "observations": [
+          "Pane \u0027ledgerGrid\u0027 raw children=0 patterns=[]",
+          "visible rows that the tested accessibility interfaces do not expose as usable row objects"
+        ]
+      },
+      {
+        "path": "UIA",
+        "surface": "toolbar",
+        "result": "NOT_AVAILABLE",
+        "observations": [
+          "Pane \u0027toolbar\u0027 raw children=0 patterns=[]",
+          "visible rows that the tested accessibility interfaces do not expose as usable row objects"
+        ]
+      },
+      {
+        "path": "UIA",
+        "surface": "search box",
+        "result": "AVAILABLE",
+        "observations": [
+          "Edit \u0027Search ledger\u0027 exposes [Value,Text]"
+        ]
+      },
+      {
+        "path": "MSAA",
+        "surface": "grid",
+        "result": "NOT_AVAILABLE",
+        "observations": [
+          "AccessibleObjectFromWindow ok: role=10 name=\u0027\u0027 accChildCount=0"
+        ]
+      },
+      {
+        "path": "Win32 messages",
+        "surface": "grid",
+        "result": "NOT_AVAILABLE",
+        "observations": [
+          "8 child windows; grid class WindowsForms10.Window.8.app.0.30495d1_r3_ad1 is not a list or grid class, so no row-level messages apply; WM_GETTEXT is empty",
+          "the grid\u0027s scrollbar is a real child window: GetScrollInfo pos=0 max=40 page=21 (scroll position, not row content)"
+        ]
+      },
+      {
+        "path": "Keyboard",
+        "surface": "grid and toolbar",
+        "result": "CONFIGURED",
+        "observations": [
+          "declared by this adapter: Ctrl\u002BP opens the payment dialog for the selected row; F6 toggles the sort; arrow keys move the selection",
+          "keyboard is tried before any pixel click on the painted toolbar"
+        ]
+      },
+      {
+        "path": "Image",
+        "surface": "grid",
+        "result": "AVAILABLE",
+        "observations": [
+          "7 column separators, 21 full rows of 23px, header bottom 25px; columns named from the header: Date, Ref #, Account, Type, Amount, Balance, Status"
+        ]
+      },
+      {
+        "path": "OCR",
+        "surface": "grid",
+        "result": "AVAILABLE",
+        "observations": [
+          "header, reader A (Windows.Media.Ocr en-US): \u0027Date Ref # Account Type Amount Balance Status\u0027",
+          "header, reader B (Tesseract 5.0.0): \u0027Date Ref # Account Type Amount Balance | Status\u0027"
+        ]
+      }
+    ],
+    "raw_dumps": [
+      "diagnostic-uia-raw.txt",
+      "diagnostic-msaa.txt",
+      "diagnostic-win32-children.txt"
+    ]
+  },
+  "decision": {
+    "step": "inspect_grid",
+    "methods": [
+      "Win32 window enumeration",
+      "UI Automation",
+      "image: header template and gridlines"
+    ],
+    "observations": [
+      "route lock acquired after 0 ms",
+      "attached to \u0027Payables Ledger - Synthetic Co.\u0027 pid 5320 started 2026-11-17T15:52:25.1567717Z, dpi 96",
+      "diagnostic: UIA/grid=NOT_AVAILABLE; UIA/toolbar=NOT_AVAILABLE; UIA/search box=AVAILABLE; MSAA/grid=NOT_AVAILABLE; Win32 messages/grid=NOT_AVAILABLE; Keyboard/grid and toolbar=CONFIGURED",
+      "header read: Date | Ref # | Account | Type | Amount | Balance | Status",
+      "geometry: 7 columns, 21 full rows of 23px, header bottom at 25px, selected row none",
+      "target window: GetDpiForWindow = 96, DPI awareness = per-monitor; driver is per-monitor v2"
+    ],
+    "candidates": null,
+    "discriminant": null,
+    "criteria_met": [],
+    "refusal_code": null,
+    "refusal_reason": null,
+    "captures": [
+      "4932-001-inspect-grid.png"
+    ]
+  }
+}

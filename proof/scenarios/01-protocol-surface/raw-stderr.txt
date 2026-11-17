@@ -1,0 +1,33 @@
+info: ModelContextProtocol.Server.StdioServerTransport[857250842]
+      Server (stream) (ledger-grid) transport reading messages.
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: D:\a\painted-grid-automation\painted-grid-automation\out\mcp\
+info: ModelContextProtocol.Server.McpServer[570385771]
+      Server (ledger-grid 0.1.0) method 'initialize' request handler called.
+info: ModelContextProtocol.Server.McpServer[1867955179]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'initialize' request handler completed in 32.8324ms.
+info: ModelContextProtocol.Server.McpServer[570385771]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler called.
+info: ModelContextProtocol.Server.McpServer[570385771]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/list' request handler called.
+info: ModelContextProtocol.Server.McpServer[1867955179]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/list' request handler completed in 17.1581ms.
+{"at":"2026-11-17T15:52:21.9592894Z","pid":4132,"kind":"server_start","data":{"pid":4132,"db":"operations.db","recovered_in_flight_to_unknown":0,"allow_exe":"LedgerApp.exe","ocr_fault":null}}
+{"at":"2026-11-17T15:52:21.9914457Z","pid":4132,"kind":"call","data":{"tool":"operation_status","args":{"opId":"OP-00000000"}}}
+{"at":"2026-11-17T15:52:21.9961200Z","pid":4132,"kind":"result","data":{"tool":"operation_status","ms":4,"code":"OPERATION_NOT_FOUND","message":"no operation OP-00000000","decision":{"Step":"operation_status","Methods":[],"Observations":["route lock acquired after 0 ms"],"Candidates":null,"Discriminant":null,"CriteriaMet":[],"RefusalCode":"OPERATION_NOT_FOUND","RefusalReason":"no operation OP-00000000","Captures":[]}}}
+info: ModelContextProtocol.Server.McpServer[2065726448]
+      "operation_status" completed. IsError = True.
+info: ModelContextProtocol.Server.McpServer[1867955179]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler completed in 228.8724ms.
+info: ModelContextProtocol.Server.StdioServerTransport[1221292038]
+      Server (stream) (ledger-grid) transport completed reading messages.
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+info: ModelContextProtocol.Server.StdioServerTransport[1375634372]
+      Server (stream) (ledger-grid) shutting down.
+info: ModelContextProtocol.Server.StdioServerTransport[1256455528]
+      Server (stream) (ledger-grid) shut down.

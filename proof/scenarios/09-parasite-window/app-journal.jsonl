@@ -1,0 +1,3 @@
+{"at":"2026-11-17T15:53:42.1187130Z","evt":"created","data":{"seed":61,"flags":[],"rows":41}}
+{"at":"2026-11-17T15:53:42.1262911Z","evt":"started","data":{"pid":632,"loaded":false,"rows":41}}
+{"at":"2026-11-17T15:53:46.5584433Z","evt":"selection_changed","data":{"tx":"TX-0010","source":"mouse"}}

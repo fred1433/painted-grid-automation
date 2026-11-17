@@ -1,0 +1,8 @@
+hwnd=0x5020E class=WindowsForms10.Window.8.app.0.30495d1_r3_ad1 rect={X=27,Y=125,Width=930,Height=546} visible=True WM_GETTEXT=''
+hwnd=0x60210 class=WindowsForms10.Window.8.app.0.30495d1_r3_ad1 rect={X=27,Y=125,Width=912,Height=546} visible=True WM_GETTEXT=''
+hwnd=0x50212 class=WindowsForms10.ScrollBar.app.0.30495d1_r3_ad1 rect={X=939,Y=125,Width=18,Height=546} visible=True WM_GETTEXT=''
+hwnd=0x70202 class=WindowsForms10.Window.8.app.0.30495d1_r3_ad1 rect={X=27,Y=671,Width=930,Height=46} visible=True WM_GETTEXT=''
+hwnd=0x6020A class=WindowsForms10.Window.8.app.0.30495d1_r3_ad1 rect={X=27,Y=91,Width=930,Height=34} visible=True WM_GETTEXT=''
+hwnd=0x701FA class=WindowsForms10.Static.app.0.30495d1_r3_ad1 rect={X=35,Y=100,Width=47,Height=17} visible=True WM_GETTEXT='Search'
+hwnd=0x8008C class=WindowsForms10.Edit.app.0.30495d1_r3_ad1 rect={X=97,Y=96,Width=260,Height=25} visible=True WM_GETTEXT=''
+hwnd=0x40204 class=WindowsForms10.Window.8.app.0.30495d1_r3_ad1 rect={X=27,Y=57,Width=930,Height=34} visible=True WM_GETTEXT=''
