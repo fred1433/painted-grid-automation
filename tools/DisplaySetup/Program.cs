@@ -55,9 +55,9 @@ static class Program
         int g = DisplayConfigGetDeviceInfo(pkt);
         int min = Marshal.ReadInt32(pkt, 20), cur = Marshal.ReadInt32(pkt, 24), max = Marshal.ReadInt32(pkt, 28);
         int rec = Math.Abs(min);
-        Console.WriteLine($"get dpi scale: {g}; min {min} cur {cur} max {max}; recommended {Scales[rec]} %, current {Scales[Math.Clamp(rec + cur, 0, Scales.Length - 1)]} %");
+        Console.WriteLine($"get dpi scale: {g}; min {min} cur {cur} max {max}; recommended scale {Scales[rec] / 100.0:0.00}x, current {Scales[Math.Clamp(rec + cur, 0, Scales.Length - 1)] / 100.0:0.00}x");
         int target = Array.IndexOf(Scales, want) - rec;
-        if (target < min || target > max) { Console.WriteLine($"{want} % is outside the allowed range at this resolution"); return 4; }
+        if (target < min || target > max) { Console.WriteLine($"scale {want / 100.0:0.00}x is outside the allowed range at this resolution"); return 4; }
         IntPtr set = Marshal.AllocHGlobal(24);
         Marshal.WriteInt32(set, 0, -4); Marshal.WriteInt32(set, 4, 24); Marshal.WriteInt64(set, 8, adapter); Marshal.WriteInt32(set, 16, source); Marshal.WriteInt32(set, 20, target);
         int s = DisplayConfigSetDeviceInfo(set);

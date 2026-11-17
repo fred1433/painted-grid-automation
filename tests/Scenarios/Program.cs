@@ -570,7 +570,7 @@ public static class Program
 
     static async Task Dpi(Ctx c)
     {
-        // Real 150 % display scaling when the DPI job managed to set it; otherwise the named fallback.
+        // Real display scaling 1.5 when the DPI job managed to set it; otherwise the named fallback.
         var app = c.StartApp(181);
         uint dpi = Native.GetDpiForWindow(app.MainWindowHandle);
         bool real = dpi == 144;
@@ -580,7 +580,7 @@ public static class Program
             Directory.Delete(c.Data, true);
             app = c.StartApp(181, extra: "--render-scale 1.5 --dpi-unaware");
         }
-        c.Note($"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}; mode: {(real ? "real 150 % display scaling, application per-monitor v2" : "fallback: 96 dpi display, application DPI-unaware and drawing at 1.5x")}");
+        c.Note($"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}; mode: {(real ? "real display scaling 1.5 (144 dpi), application per-monitor v2" : "fallback: 96 dpi display, application DPI-unaware and drawing at 1.5x")}");
         var m = await c.Server();
         var ins = await c.Call(m, "inspect_grid", A());
         if (real) c.Check(ins.Body.ToString().Contains("GetDpiForWindow = 144"), "the server logs GetDpiForWindow = 144 for the application window");
@@ -593,6 +593,6 @@ public static class Program
         c.Check(!ex.IsError && ex.Str("result", "state") == "CONFIRMED", $"payment confirmed ({ex.Str("result", "state")} {ex.Code})");
         c.Check(c.Facts().Payments == 1, "exactly 1 payment");
         c.Frame("dpi-150", $"{target.Ref} / {target.Tx}", prep.Str("result", "summary", "tx_id"), ex.Str("result", "state"), real ? "GetDpiForWindow = 144" : "fallback: DPI-unaware app drawing at 1.5x on a 96 dpi display");
-        File.WriteAllText(Path.Combine(c.Proof, "dpi.txt"), $"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}\nreal 150 % display scaling: {(real ? "demonstrated" : "not demonstrated on this runner (fallback ran)")}\n");
+        File.WriteAllText(Path.Combine(c.Proof, "dpi.txt"), $"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}\nreal display scaling 1.5 (144 dpi): {(real ? "demonstrated" : "not demonstrated on this runner (fallback ran)")}\n");
     }
 }

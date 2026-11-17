@@ -97,7 +97,7 @@ public sealed class LedgerDriver : IDisposable
     {
         var r = l.GridRect;
         img = Evidence.Capture(r);
-        return GridGeometry.Detect(img, r, _prof, _win, d);
+        return GridGeometry.Detect(img, r, _prof, _win, d, b => _tess.ReadLine(b));
     }
 
     void RequireResponsive(TargetWindow t, Decision d)
@@ -200,12 +200,25 @@ public sealed class LedgerDriver : IDisposable
         return c;
     }
 
-    (string A, string B) DoubleRead(string fromRowA, Bitmap img, Rectangle r, bool strict)
+    (string A, string B) DoubleRead(string fromRowA, Bitmap img, Rectangle r, Func<string, string>? constrain, Decision d, string field)
     {
         using var prep = Ocr.Prepare(img, r, 3, 12, out _);
         string a = FaultA(Ocr.Norm(fromRowA)), b = _tess.ReadLine(prep);
-        if (strict) { a = Canon(a); b = Canon(b); }
+        if (constrain != null)
+        {
+            string ca = constrain(Canon(a)), cb = constrain(Canon(b));
+            if (ca != Canon(a) || cb != Canon(b)) d.Obs($"{field}: raw reads '{a}' / '{b}', digits-only positions taken as '{ca}' / '{cb}' (to be confirmed against the pixels)");
+            return (ca, cb);
+        }
         return (a, b);
+    }
+
+    string Pixels(Bitmap img, GridGeometry g, int row, string col, string value, bool right, Decision d)
+    {
+        var glyph = Glyphs.Verify(img, g.FullCell(row, g.Col(col)), value, right, _prof, g.Scale(_prof));
+        if (glyph != null) throw new StopException(Codes.AmbiguousReading, $"{col}: both readers say '{value}', but the pixels do not match it re-drawn in the grid font ({glyph}); look-alike glyphs suspected", d);
+        d.Met($"{col} pixels match '{value}' re-drawn in the grid font");
+        return value;
     }
 
     static string Canon(string s) => Regex.Replace(s.Replace('\u2014', '-').Replace('\u2013', '-'), @"\s+", "");
@@ -226,7 +239,7 @@ public sealed class LedgerDriver : IDisposable
         using var img = Evidence.Capture(r);
         d.Captures.Add(_ev.Shot("detail-panel", img));
         using var prep = Ocr.Prepare(img, new Rectangle(0, 0, img.Width, img.Height), 2, 12, out _);
-        string a = FaultA(_win.ReadLine(prep)).Replace('\u2014', '-').Replace('\u2013', '-'), b = _tess.ReadLine(prep).Replace('\u2014', '-').Replace('\u2013', '-');
+        string a = Ocr.ConstrainLine(FaultA(_win.ReadLine(prep)).Replace('\u2014', '-').Replace('\u2013', '-')), b = Ocr.ConstrainLine(_tess.ReadLine(prep).Replace('\u2014', '-').Replace('\u2013', '-'));
         d.Obs($"detail panel: reader A '{a}' | reader B '{b}'");
         string? F(Regex re, string s, int grp = 0) { var m = re.Match(s); return m.Success ? m.Groups[grp].Value : null; }
         var fields = new (string Name, Regex Re, int Grp)[] { ("transaction id", DetailTx, 0), ("reference", DetailRef, 0), ("amount", DetailAmt, 1), ("status", DetailStatus, 0) };
@@ -311,14 +324,11 @@ public sealed class LedgerDriver : IDisposable
             string A(string col) => rowA[g2.Col(col)] ?? "";
             var sel = new Selection
             {
-                Ref = Agree("Ref #", DoubleRead(A("Ref #"), img2, g2.Cell(idx, g2.Col("Ref #")), true), Ocr.StrictRef, d),
-                Date = Agree("Date", DoubleRead(A("Date"), img2, g2.Cell(idx, g2.Col("Date")), true), Ocr.StrictDate, d),
-                Account = Agree("Account", DoubleRead(A("Account"), img2, g2.Cell(idx, g2.Col("Account")), false), null, d),
+                Ref = Pixels(img2, g2, idx, "Ref #", Agree("Ref #", DoubleRead(A("Ref #"), img2, g2.Cell(idx, g2.Col("Ref #")), Ocr.ConstrainRef, d, "Ref #"), Ocr.StrictRef, d), false, d),
+                Date = Pixels(img2, g2, idx, "Date", Agree("Date", DoubleRead(A("Date"), img2, g2.Cell(idx, g2.Col("Date")), Ocr.ConstrainNumeric, d, "Date"), Ocr.StrictDate, d), false, d),
+                Account = Agree("Account", DoubleRead(A("Account"), img2, g2.Cell(idx, g2.Col("Account")), null, d, "Account"), null, d),
             };
-            string amt = Agree("Amount", DoubleRead(A("Amount"), img2, g2.Cell(idx, g2.Col("Amount")), true), Ocr.StrictAmount, d);
-            var glyph = Glyphs.Verify(img2, g2.FullCell(idx, g2.Col("Amount")), amt, true, _prof, g2.Scale(_prof));
-            if (glyph != null) throw new StopException(Codes.AmbiguousReading, $"Amount: both readers say '{amt}', but the pixels do not match it re-drawn in the grid font ({glyph}); look-alike glyphs suspected", d);
-            d.Met($"Amount pixels match '{amt}' re-drawn in the grid font");
+            string amt = Pixels(img2, g2, idx, "Amount", Agree("Amount", DoubleRead(A("Amount"), img2, g2.Cell(idx, g2.Col("Amount")), Ocr.ConstrainNumeric, d, "Amount"), Ocr.StrictAmount, d), true, d);
             sel.AmountCents = Ocr.Cents(amt)!.Value;
             if (q.Ref != null && sel.Ref != q.Ref) throw new StopException(Codes.TargetChanged, $"selected row reads {sel.Ref}, expected {q.Ref}", d);
             if (q.Account != null && Ocr.Fold(sel.Account) != Ocr.Fold(q.Account)) throw new StopException(Codes.TargetChanged, $"selected row account reads '{sel.Account}', expected '{q.Account}'", d);

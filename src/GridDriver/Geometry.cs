@@ -58,7 +58,7 @@ public sealed class GridGeometry
 
     static bool Near((int R, int G, int B) a, (int R, int G, int B) b, int tol) => Math.Abs(a.R - b.R) <= tol && Math.Abs(a.G - b.G) <= tol && Math.Abs(a.B - b.B) <= tol;
 
-    public static GridGeometry Detect(Bitmap img, Rectangle screen, GridProfile prof, WinRtOcr ocr, Decision d)
+    public static GridGeometry Detect(Bitmap img, Rectangle screen, GridProfile prof, WinRtOcr ocr, Decision d, Func<Bitmap, string>? fallback = null)
     {
         d.Via("image: header template and gridlines");
         var px = new Pixels(img);
@@ -113,7 +113,7 @@ public sealed class GridGeometry
 
         // Name the columns by reading the header (template = the expected header labels).
         var colIndex = new Dictionary<string, int>();
-        const int k = 2, m = 10;
+        const int k = 3, m = 12;
         using (var head = Ocr.Prepare(img, new Rectangle(0, 0, right, headerBottom), k, m, out _))
         {
             var words = ocr.Words(head);
@@ -123,6 +123,14 @@ public sealed class GridGeometry
                 float cx = (w.Box.X + w.Box.Width / 2 - m) / k;
                 int si = spans.FindIndex(s => cx >= s.Item1 && cx <= s.Item2);
                 if (si >= 0) perSpan[si] = ((perSpan[si] ?? "") + " " + w.Text).Trim();
+            }
+            for (int i = 0; i < spans.Count && fallback != null; i++)
+            {
+                if (prof.Columns.Any(c => Ocr.Fold(c) == Ocr.Fold(perSpan[i] ?? ""))) continue;
+                // A header label the first reader missed is read on its own by the second reader (naming only, not a value).
+                using var one = Ocr.Prepare(img, new Rectangle(spans[i].Item1, 0, spans[i].Item2 - spans[i].Item1, headerBottom), 3, 12, out _);
+                var t = fallback(one);
+                if (prof.Columns.Any(c => Ocr.Fold(c) == Ocr.Fold(t))) { d.Obs($"header column {i} named '{t}' by the second reader"); perSpan[i] = t; }
             }
             for (int i = 0; i < spans.Count; i++)
             {

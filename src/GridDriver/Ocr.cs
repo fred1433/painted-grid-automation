@@ -96,6 +96,24 @@ public static class Ocr
         return t.Replace('O', '0').Replace('I', '1').Replace('L', '1').Replace('S', '5');
     }
 
+    static string Digits(string s) => s.Replace('O', '0').Replace('o', '0').Replace('I', '1').Replace('l', '1').Replace('|', '1');
+
+    /// <summary>
+    /// Format-constrained reading: where the field's format only allows digits, a reader's O, I or l is taken as 0 or 1.
+    /// This is a hypothesis, never an acceptance: the value must then match the pixels when re-drawn (Glyphs.Verify).
+    /// </summary>
+    public static string ConstrainRef(string s)
+    {
+        var m = Regex.Match(s, @"^(INV|PMT|TX)-([0-9OoIl|]{4})$");
+        return m.Success ? m.Groups[1].Value + "-" + Digits(m.Groups[2].Value) : s;
+    }
+    public static string ConstrainNumeric(string s) => Regex.IsMatch(s, @"^-?[0-9OoIl|][0-9OoIl|,.\-]*$") ? Digits(s) : s;
+    public static string ConstrainLine(string s)
+    {
+        s = Regex.Replace(s, @"\b(TX|INV|PMT)-([0-9OoIl|]{4})\b", m => m.Groups[1].Value + "-" + Digits(m.Groups[2].Value));
+        return Regex.Replace(s, @"(?<![A-Za-z])-?[0-9OoIl|][0-9OoIl|,]*\.[0-9OoIl|]{2}(?=\s?USD)", m => Digits(m.Value));
+    }
+
     public static long? Cents(string amount)
     {
         if (!StrictAmount.IsMatch(amount)) return null;
