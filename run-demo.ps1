@@ -10,7 +10,8 @@ dotnet build src/Ledger.App/Ledger.App.csproj -c Release -o out/app
 dotnet build src/LedgerMcp/LedgerMcp.csproj -c Release -o out/mcp
 dotnet build src/LedgerOperator/LedgerOperator.csproj -c Release -o out/op
 dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
-$args = @('--app', 'out/app/LedgerApp.exe', '--server', 'out/mcp/ledger-mcp.exe', '--operator', 'out/op/ledger-operator.exe', '--tessdata', 'tessdata', '--out', 'proof-local', '--work', 'work-local', '--repo', '.')
-if ($Only -ne "") { $args += @('--only', $Only) }
-& ./out/scenarios/scenarios.exe @args
+$runArgs = @('--app', 'out/app/LedgerApp.exe', '--server', 'out/mcp/ledger-mcp.exe', '--operator', 'out/op/ledger-operator.exe', '--tessdata', 'tessdata', '--out', 'proof-local', '--work', 'work-local', '--repo', '.')
+if ($Only -ne "") { $runArgs += @('--only', $Only) }
+& ./out/scenarios/scenarios.exe @runArgs
+exit $LASTEXITCODE
 Write-Host "Results: proof-local/summary.md"

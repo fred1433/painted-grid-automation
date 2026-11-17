@@ -185,8 +185,10 @@ public static class Glyphs
         return m;
     }
 
-    /// <returns>null when the pixels match the re-drawn text, otherwise what differs.</returns>
-    public static string? Verify(Bitmap img, Rectangle cell, string text, bool rightAligned, GridProfile prof, double scale)
+    /// <returns>null when the pixels match the re-drawn text, otherwise what differs. <paramref name="detail"/> always says how close.</returns>
+    public static string? Verify(Bitmap img, Rectangle cell, string text, bool rightAligned, GridProfile prof, double scale) => Verify(img, cell, text, rightAligned, prof, scale, out _);
+
+    public static string? Verify(Bitmap img, Rectangle cell, string text, bool rightAligned, GridProfile prof, double scale, out string detail)
     {
         cell.Intersect(new Rectangle(0, 0, img.Width, img.Height));
         using var cap = img.Clone(cell, PixelFormat.Format24bppRgb);
@@ -207,7 +209,9 @@ public static class Glyphs
         }
         var a = Ink(cap, out var ba);
         var b = Ink(ren, out var bb);
+        detail = "";
         if (ba.IsEmpty || bb.IsEmpty) return "no ink found in the cell";
+        detail = $"ink box {ba.Width}x{ba.Height}px on screen, {bb.Width}x{bb.Height}px re-drawn";
         if (Math.Abs(ba.Width - bb.Width) > 1 || Math.Abs(ba.Height - bb.Height) > 1)
             return $"ink box {ba.Width}x{ba.Height}px on screen, {bb.Width}x{bb.Height}px when '{text}' is re-drawn";
         int differ = 0, inkPixels = 0;
@@ -220,6 +224,7 @@ public static class Glyphs
                 if (pa || pb) inkPixels++;
                 if (pa != pb) differ++;
             }
+        detail = $"{differ} of {inkPixels} ink pixels differ";
         if (differ * 4 > inkPixels) return $"{differ} of {inkPixels} ink pixels differ from '{text}' re-drawn in {prof.FontFamily} {prof.FontPx * scale:0.#}px";
         return null;
     }

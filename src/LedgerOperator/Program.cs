@@ -41,9 +41,11 @@ public static class Program
                     if (!System.Text.RegularExpressions.Regex.IsMatch(amount, @"^\d{1,3}(,\d{3})*\.\d{2}$")) { Console.Error.WriteLine("amount must be in the strict form 1,234.56"); return 2; }
                     long cents = (long)Math.Round(decimal.Parse(amount.Replace(",", ""), CultureInfo.InvariantCulture) * 100m);
                     int ttl = a.TryGetValue("ttl-seconds", out var t) ? int.Parse(t, CultureInfo.InvariantCulture) : 300;
+                    int pidValue = int.Parse(pid, CultureInfo.InvariantCulture);
                     var o = store.Get(op);
+                    if (o.State != States.NotStarted) { Console.Error.WriteLine($"NOT_APPROVABLE: {o.OpId} is {o.State}; only NOT_STARTED operations are approved"); return 1; }
                     Console.Error.WriteLine($"approving {o.OpId}: {o.InvoiceRef} {o.Account} recorded as {o.TxId} {o.AmountCents} cents {o.Currency}, pid {o.Pid}, state {o.State}");
-                    Console.WriteLine(store.IssueApproval(op, tx, cents, cur, int.Parse(pid, CultureInfo.InvariantCulture), TimeSpan.FromSeconds(ttl)));
+                    Console.WriteLine(store.IssueApproval(op, tx, cents, cur, pidValue, TimeSpan.FromSeconds(ttl)));
                     return 0;
                 }
                 case "show":

@@ -510,7 +510,7 @@ public static class Program
         var target = c.Facts().Rows.Single(r => r.AmountCents == 120_000 && r.Type == "Invoice");
         var prep = await c.Call(m, "prepare_payment", PrepArgs(target));
         c.Check(prep.IsError && prep.Code == "AMBIGUOUS", $"the amount drawn as 'l,2O0.00' is refused: {prep.Code}: {prep.Str("message")}");
-        c.Frame("lookalike-refused", $"{target.Ref} {Money(target.AmountCents)}", prep.Str("message"), prep.Code, "a strict amount needs two agreeing reads");
+        c.Frame("lookalike-refused", $"{target.Ref} {Money(target.AmountCents)} (drawn on screen as l,2O0.00)", "both OCR readers: 1,200.00; the pixels: no match", prep.Code, prep.Str("message"));
         var (_, list, _) = c.Operator($"list --db \"{c.Db}\"");
         c.Check(list.Trim() == "", "no operation was recorded");
         c.Check(c.Facts().Payments == 0, "no payment");

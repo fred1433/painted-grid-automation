@@ -135,7 +135,7 @@ public sealed class Ctx : IAsyncDisposable
         using var shot = new Bitmap(w, h, PixelFormat.Format24bppRgb);
         using (var g = Graphics.FromImage(shot)) g.CopyFromScreen(0, 0, 0, 0, new Size(w, h));
         shot.Save(Path.Combine(Proof, $"screen-{label}.png"), ImageFormat.Png);
-        const int band = 132;
+        const int band = 178;
         using var f = new Bitmap(w, h + band, PixelFormat.Format24bppRgb);
         using (var g = Graphics.FromImage(f))
         {
@@ -147,13 +147,26 @@ public sealed class Ctx : IAsyncDisposable
             using var accent = new SolidBrush(Color.FromArgb(242, 201, 76));
             using var text = new SolidBrush(Color.FromArgb(236, 233, 226));
             g.DrawString($"{Name}: {label}", big, accent, 14, h + 10);
-            g.DrawString($"requested  {requested}", small, text, 14, h + 40);
-            g.DrawString($"observed   {observed}", small, text, 14, h + 60);
-            g.DrawString($"state      {state}", small, text, 14, h + 80);
-            g.DrawString($"reason     {(reason.Length > 120 ? reason[..117] + "..." : reason)}", small, text, 14, h + 100);
+            int y = h + 40;
+            foreach (var (k, v) in new[] { ("requested", requested), ("observed", observed), ("state", state), ("reason", reason) })
+            {
+                var lines = Wrap(v, 112).Take(k is "reason" or "observed" ? 3 : 1).ToList();
+                for (int i = 0; i < lines.Count; i++) { g.DrawString((i == 0 ? k.PadRight(11) : new string(' ', 11)) + lines[i], small, text, 14, y); y += 18; }
+            }
         }
         var dir = Directory.CreateDirectory(Path.Combine(P.Out, "frames")).FullName;
         f.Save(Path.Combine(dir, $"{Interlocked.Increment(ref FrameSeq):00}-{Name}-{label}.png"), ImageFormat.Png);
+    }
+
+    static IEnumerable<string> Wrap(string s, int width)
+    {
+        var line = new StringBuilder();
+        foreach (var w in (s ?? "").Split(' '))
+        {
+            if (line.Length + w.Length + 1 > width && line.Length > 0) { yield return line.ToString(); line.Clear(); }
+            line.Append(line.Length > 0 ? " " : "").Append(w);
+        }
+        if (line.Length > 0) yield return line.ToString();
     }
 
     public void KeyToApp(Process app, params ushort[] vks)

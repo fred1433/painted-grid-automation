@@ -215,9 +215,9 @@ public sealed class LedgerDriver : IDisposable
 
     string Pixels(Bitmap img, GridGeometry g, int row, string col, string value, bool right, Decision d)
     {
-        var glyph = Glyphs.Verify(img, g.FullCell(row, g.Col(col)), value, right, _prof, g.Scale(_prof));
+        var glyph = Glyphs.Verify(img, g.FullCell(row, g.Col(col)), value, right, _prof, g.Scale(_prof), out var detail);
         if (glyph != null) throw new StopException(Codes.AmbiguousReading, $"{col}: both readers say '{value}', but the pixels do not match it re-drawn in the grid font ({glyph}); look-alike glyphs suspected", d);
-        d.Met($"{col} pixels match '{value}' re-drawn in the grid font");
+        d.Met($"{col} pixels match '{value}' re-drawn in the grid font ({detail}; refused above 1 in 4)");
         return value;
     }
 

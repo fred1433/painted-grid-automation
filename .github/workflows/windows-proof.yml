@@ -75,3 +75,16 @@ jobs:
         with:
           name: proof-dpi
           path: proof-dpi
+
+  run-demo-script:
+    # Checks that the README's replay command works as written.
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: ./run-demo.ps1 -Only 01,02,21
+        shell: pwsh
+        run: ./run-demo.ps1 -Only 01,02,21
