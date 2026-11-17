@@ -374,6 +374,20 @@ public static class Program
         }
     }
 
+    static void Cli_refuses_a_file_that_is_not_an_operation_database()
+    {
+        string dir = Directory.CreateDirectory(Path.Combine(_root, "not-db-" + Guid.NewGuid().ToString("N")[..6])).FullName;
+        string text = Path.Combine(dir, "notes.txt"), empty = Path.Combine(dir, "empty.db");
+        File.WriteAllText(text, "not a database");
+        File.WriteAllBytes(empty, Array.Empty<byte>());
+        foreach (var f in new[] { text, empty })
+        {
+            var (code, outp, err) = Cli("list", "--db", f);
+            Assert(code == 2 && outp.Trim() == "" && err.Contains("NOT_AN_OPERATION_DATABASE") && new FileInfo(f).Length == (f == text ? 14 : 0),
+                $"list on {Path.GetFileName(f)}: expected exit 2, NOT_AN_OPERATION_DATABASE and the file unchanged, got exit {code}: {err.Trim()}");
+        }
+    }
+
     static void Cli_refuses_unknown_options()
     {
         var s = NewStore(out var db);

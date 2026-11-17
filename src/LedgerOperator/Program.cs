@@ -17,7 +17,7 @@ namespace LedgerOperator;
 /// Issuing a token revokes the operation's unused ones; a reconciliation revokes the unused ones on its account, invoice or row.
 /// The CLI opens only an existing database (the server creates it) and refuses any option the command does not take.
 /// Exit codes: 0 done, 1 refused (code and reason on stderr), 2 bad command line (unknown or repeated option, missing value,
-/// no database at the path given), 3 unexpected error (type and message on stderr).
+/// no operation database at the path given), 3 unexpected error (type and message on stderr).
 /// </summary>
 public static class Program
 {
@@ -96,7 +96,7 @@ public static class Program
                 }
             }
         }
-        catch (Refusal r) { Console.Error.WriteLine($"{r.Code}: {r.Message}"); return 1; }
+        catch (Refusal r) { Console.Error.WriteLine($"{r.Code}: {r.Message}"); return r.Code == "NOT_AN_OPERATION_DATABASE" ? 2 : 1; }
         catch (Exception e) { Console.Error.WriteLine($"error: {e.GetType().Name}: {e.Message}"); return 3; }
     }
 

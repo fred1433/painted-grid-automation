@@ -62,14 +62,21 @@ public sealed class OperationStore
         if (create) Directory.CreateDirectory(Path.GetDirectoryName(DbPath)!);
         else if (!File.Exists(DbPath)) throw new Refusal("DATABASE_NOT_FOUND", $"no operation database at {DbPath}");
         _cs = new SqliteConnectionStringBuilder { DataSource = DbPath, Mode = create ? SqliteOpenMode.ReadWriteCreate : SqliteOpenMode.ReadWrite, Pooling = false, DefaultTimeout = 30 }.ToString();
-        using var c = Open();
         if (!create)
         {
-            using var cmd = c.CreateCommand();
-            cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('operations','approvals','events')";
-            if (Convert.ToInt32(cmd.ExecuteScalar()) != 3) throw new Refusal("NOT_AN_OPERATION_DATABASE", $"{DbPath} exists but does not hold the operation tables");
+            int tables;
+            try
+            {
+                using var c0 = Open();
+                using var cmd = c0.CreateCommand();
+                cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('operations','approvals','events')";
+                tables = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+            catch (SqliteException ex) { throw new Refusal("NOT_AN_OPERATION_DATABASE", $"{DbPath} cannot be read as an operation database (SQLite error {ex.SqliteErrorCode}: {ex.Message})"); }
+            if (tables != 3) throw new Refusal("NOT_AN_OPERATION_DATABASE", $"{DbPath} exists but does not hold the operation tables");
             return;
         }
+        using var c = Open();
         Exec(c, null, @"
 CREATE TABLE IF NOT EXISTS operations(
   op_id TEXT PRIMARY KEY, business_key TEXT NOT NULL, account TEXT NOT NULL, account_key TEXT NOT NULL, invoice_ref TEXT NOT NULL, tx_id TEXT NOT NULL,
