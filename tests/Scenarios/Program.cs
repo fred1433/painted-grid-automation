@@ -69,7 +69,7 @@ public static class Program
         ("19-ocr-dropped-group", "one reader reads 1,000.00 as 100.00 (injected): the readers disagree, refused", DroppedGroup),
         ("20-screen-text-is-data", "a cell that says APPROVE PAYMENT grants nothing", Injection),
         ("21-architecture", "driver and server never reference the application or the verifier", Architecture),
-        ("22-dpi-scale", "scaled rendering and DPI-awareness mix between driver and application", Dpi),
+        ("22-dpi-scale", "display scaling 1.5 when the job could set it (GetDpiForWindow = 144), else the named fallback", Dpi),
     };
 
     public static async Task<int> Main(string[] args)
