@@ -327,7 +327,7 @@ public sealed class LedgerDriver : IDisposable
         return value;
     }
 
-    static string Canon(string s) => Regex.Replace(s.Replace('—', '-').Replace('–', '-'), @"\s+", "");
+    static string Canon(string s) => Regex.Replace(s.Replace('\u2014', '-').Replace('\u2013', '-'), @"\s+", "");
 
     string Agree(string field, (string A, string B) r, Regex? format, Decision d)
     {
@@ -345,7 +345,7 @@ public sealed class LedgerDriver : IDisposable
         using var img = Evidence.Capture(r);
         d.Captures.Add(_ev.Shot("detail-panel", img));
         using var prep = Ocr.Prepare(img, new Rectangle(0, 0, img.Width, img.Height), 2, 12, out _);
-        string a = Ocr.ConstrainLine(FaultA(_win.ReadLine(prep)).Replace('—', '-').Replace('–', '-')), b = Ocr.ConstrainLine(_tess.ReadLine(prep).Replace('—', '-').Replace('–', '-'));
+        string a = Ocr.ConstrainLine(FaultA(_win.ReadLine(prep)).Replace('\u2014', '-').Replace('\u2013', '-')), b = Ocr.ConstrainLine(_tess.ReadLine(prep).Replace('\u2014', '-').Replace('\u2013', '-'));
         d.Obs($"detail panel: reader A '{a}' | reader B '{b}'");
         string? F(Regex re, string s, int grp = 0) { var m = re.Match(s); return m.Success ? m.Groups[grp].Value : null; }
         var fields = new (string Name, Regex Re, int Grp)[] { ("transaction id", DetailTx, 0), ("reference", DetailRef, 0), ("amount", DetailAmt, 1), ("status", DetailStatus, 0) };
