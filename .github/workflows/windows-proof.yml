@@ -34,9 +34,44 @@ jobs:
           $v | Tee-Object -FilePath proof-run/versions.txt
       - name: Scenarios (MCP client -> stdio server -> screen capture -> SendInput)
         shell: pwsh
-        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --out proof-run --work work --repo .
+        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --out proof-run --work work --repo . --skip 22
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: proof-run
           path: proof-run
+
+  dpi-150:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Pinned OCR model
+        shell: pwsh
+        run: ./tools/fetch-tessdata.ps1
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build src/Ledger.App/Ledger.App.csproj -c Release -o out/app
+          dotnet build src/LedgerMcp/LedgerMcp.csproj -c Release -o out/mcp
+          dotnet build src/LedgerOperator/LedgerOperator.csproj -c Release -o out/op
+          dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
+          dotnet build tools/DisplaySetup/DisplaySetup.csproj -c Release -o out/display
+      - name: Set 1920x1080 at 150 %
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force proof-dpi | Out-Null
+          ./out/display/display-setup.exe 1920 1080 150 | Tee-Object -FilePath proof-dpi/display-setup.txt
+          exit $LASTEXITCODE
+      - name: DPI scenario
+        shell: pwsh
+        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --out proof-dpi --work work --repo . --only 22
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-dpi
+          path: proof-dpi

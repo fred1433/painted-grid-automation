@@ -60,17 +60,18 @@ public sealed class LedgerDriver : IDisposable
     readonly Evidence _ev;
     readonly GridProfile _prof = new();
     readonly WinRtOcr _win;
-    readonly ILineReader _readerA;
     readonly TesseractOcr _tess;
-    public string Readers => $"{_readerA.Name} + {_tess.Name}";
+    public string Readers => $"reader A: {_win.Name} on the whole row{(_cfg.OcrFault != null ? " [fault injected: " + _cfg.OcrFault + "]" : "")}; reader B: {_tess.Name} on each cell";
+
+    /// <summary>Test-only fault on reader A, named and logged: a dropped digit group.</summary>
+    string FaultA(string s) => _cfg.OcrFault == "1000-as-100" ? s.Replace("1,000.00", "100.00") : s;
 
     public LedgerDriver(DriverConfig cfg, Evidence ev)
     {
         _cfg = cfg; _ev = ev;
         _win = WinRtOcr.TryCreate(out var why) ?? throw new StopException(Codes.NotAvailable, "Windows.Media.Ocr unavailable: " + why);
-        _readerA = cfg.OcrFault == "1000-as-100" ? new DropGroupFault(_win) : _win;
         _tess = new TesseractOcr(cfg.TessdataDir);
-        if (cfg.OcrFault != null) ev.Log("fault_active", new { fault = cfg.OcrFault, reader = _readerA.Name });
+        if (cfg.OcrFault != null) ev.Log("fault_active", new { fault = cfg.OcrFault, reader = "A" });
     }
 
     public void Dispose() => _tess.Dispose();
@@ -199,15 +200,15 @@ public sealed class LedgerDriver : IDisposable
         return c;
     }
 
-    (string A, string B) DoubleRead(Bitmap img, Rectangle r, bool strict, Decision d)
+    (string A, string B) DoubleRead(string fromRowA, Bitmap img, Rectangle r, bool strict)
     {
         using var prep = Ocr.Prepare(img, r, 3, 12, out _);
-        string a = _readerA.ReadLine(prep), b = _tess.ReadLine(prep);
+        string a = FaultA(Ocr.Norm(fromRowA)), b = _tess.ReadLine(prep);
         if (strict) { a = Canon(a); b = Canon(b); }
         return (a, b);
     }
 
-    static string Canon(string s) => Regex.Replace(s.Replace('—', '-').Replace('–', '-'), @"\s+", "");
+    static string Canon(string s) => Regex.Replace(s.Replace('\u2014', '-').Replace('\u2013', '-'), @"\s+", "");
 
     string Agree(string field, (string A, string B) r, Regex? format, Decision d)
     {
@@ -225,7 +226,7 @@ public sealed class LedgerDriver : IDisposable
         using var img = Evidence.Capture(r);
         d.Captures.Add(_ev.Shot("detail-panel", img));
         using var prep = Ocr.Prepare(img, new Rectangle(0, 0, img.Width, img.Height), 2, 12, out _);
-        string a = _readerA.ReadLine(prep).Replace('—', '-').Replace('–', '-'), b = _tess.ReadLine(prep).Replace('—', '-').Replace('–', '-');
+        string a = FaultA(_win.ReadLine(prep)).Replace('\u2014', '-').Replace('\u2013', '-'), b = _tess.ReadLine(prep).Replace('\u2014', '-').Replace('\u2013', '-');
         d.Obs($"detail panel: reader A '{a}' | reader B '{b}'");
         string? F(Regex re, string s, int grp = 0) { var m = re.Match(s); return m.Success ? m.Groups[grp].Value : null; }
         var fields = new (string Name, Regex Re, int Grp)[] { ("transaction id", DetailTx, 0), ("reference", DetailRef, 0), ("amount", DetailAmt, 1), ("status", DetailStatus, 0) };
@@ -306,13 +307,18 @@ public sealed class LedgerDriver : IDisposable
             if (g2!.SelectedRow != idx) throw new StopException(Codes.SelectionNotObserved, $"after the click the highlighted row is {(g2.SelectedRow?.ToString() ?? "none")}, expected {idx}", d);
             d.Met("highlight is on the clicked row in a new capture");
             d.Captures.Add(_ev.Shot("after-click", img2));
+            var rowA = g2.ReadRow(img2, _win, idx, 3);
+            string A(string col) => rowA[g2.Col(col)] ?? "";
             var sel = new Selection
             {
-                Ref = Agree("Ref #", DoubleRead(img2, g2.Cell(idx, g2.Col("Ref #")), true, d), Ocr.StrictRef, d),
-                Date = Agree("Date", DoubleRead(img2, g2.Cell(idx, g2.Col("Date")), true, d), Ocr.StrictDate, d),
-                Account = Agree("Account", DoubleRead(img2, g2.Cell(idx, g2.Col("Account")), false, d), null, d),
+                Ref = Agree("Ref #", DoubleRead(A("Ref #"), img2, g2.Cell(idx, g2.Col("Ref #")), true), Ocr.StrictRef, d),
+                Date = Agree("Date", DoubleRead(A("Date"), img2, g2.Cell(idx, g2.Col("Date")), true), Ocr.StrictDate, d),
+                Account = Agree("Account", DoubleRead(A("Account"), img2, g2.Cell(idx, g2.Col("Account")), false), null, d),
             };
-            string amt = Agree("Amount", DoubleRead(img2, g2.Cell(idx, g2.Col("Amount")), true, d), Ocr.StrictAmount, d);
+            string amt = Agree("Amount", DoubleRead(A("Amount"), img2, g2.Cell(idx, g2.Col("Amount")), true), Ocr.StrictAmount, d);
+            var glyph = Glyphs.Verify(img2, g2.FullCell(idx, g2.Col("Amount")), amt, true, _prof, g2.Scale(_prof));
+            if (glyph != null) throw new StopException(Codes.AmbiguousReading, $"Amount: both readers say '{amt}', but the pixels do not match it re-drawn in the grid font ({glyph}); look-alike glyphs suspected", d);
+            d.Met($"Amount pixels match '{amt}' re-drawn in the grid font");
             sel.AmountCents = Ocr.Cents(amt)!.Value;
             if (q.Ref != null && sel.Ref != q.Ref) throw new StopException(Codes.TargetChanged, $"selected row reads {sel.Ref}, expected {q.Ref}", d);
             if (q.Account != null && Ocr.Fold(sel.Account) != Ocr.Fold(q.Account)) throw new StopException(Codes.TargetChanged, $"selected row account reads '{sel.Account}', expected '{q.Account}'", d);
@@ -439,9 +445,9 @@ public sealed class LedgerDriver : IDisposable
                 img.Result = g.ColumnIndex.Count == _prof.Columns.Length ? "AVAILABLE" : "PARTIAL";
                 img.Observations.Add($"{g.Spans.Count} column separators, {g.Rows.Count} full rows of {g.RowHeight}px, header bottom {g.HeaderBottom}px; columns named from the header: {string.Join(", ", g.ColumnIndex.OrderBy(k => k.Value).Select(k => k.Key))}");
                 using var head = Ocr.Prepare(cap, new Rectangle(0, 0, g.Spans[^1].X1, g.HeaderBottom), 2, 12, out _);
-                string a = _readerA.ReadLine(head), b = _tess.ReadLine(head);
+                string a = _win.ReadLine(head), b = _tess.ReadLine(head);
                 ocr.Result = _prof.Columns.All(c => Ocr.Fold(a).Contains(Ocr.Fold(c))) && _prof.Columns.All(c => Ocr.Fold(b).Contains(Ocr.Fold(c))) ? "AVAILABLE" : "PARTIAL";
-                ocr.Observations.Add($"header, reader A ({_readerA.Name}): '{a}'");
+                ocr.Observations.Add($"header, reader A ({_win.Name}): '{a}'");
                 ocr.Observations.Add($"header, reader B ({_tess.Name}): '{b}'");
             }
         }

@@ -86,13 +86,14 @@ public static class Program
                 case "--work": P.Work = Path.GetFullPath(args[++i]); break;
                 case "--repo": P.Repo = Path.GetFullPath(args[++i]); break;
                 case "--only": Only = args[++i].Split(','); break;
+                case "--skip": Skip = args[++i].Split(','); break;
             }
         foreach (var (k, v) in new[] { ("--app", P.App), ("--server", P.Server), ("--operator", P.Operator), ("--tessdata", P.Tessdata) })
             if (v == "" || !(File.Exists(v) || Directory.Exists(v))) { Console.Error.WriteLine($"missing or not found: {k} '{v}'"); return 2; }
         Directory.CreateDirectory(P.Out);
         var summary = new List<object>();
         int failed = 0;
-        foreach (var (name, what, run) in All.Where(s => Only == null || Only.Any(o => s.Name.StartsWith(o))))
+        foreach (var (name, what, run) in All.Where(s => (Only == null || Only.Any(o => s.Name.StartsWith(o))) && (Skip == null || !Skip.Any(o => s.Name.StartsWith(o)))))
         {
             Console.WriteLine($"== {name}: {what}");
             var sw = Stopwatch.StartNew();
@@ -121,6 +122,7 @@ public static class Program
     }
 
     static string[]? Only;
+    static string[]? Skip;
 
     // ---------------------------------------------------------------- scenarios
 
@@ -568,18 +570,29 @@ public static class Program
 
     static async Task Dpi(Ctx c)
     {
-        var app = c.StartApp(181, extra: "--render-scale 1.5 --dpi-unaware");
+        // Real 150 % display scaling when the DPI job managed to set it; otherwise the named fallback.
+        var app = c.StartApp(181);
+        uint dpi = Native.GetDpiForWindow(app.MainWindowHandle);
+        bool real = dpi == 144;
+        if (!real)
+        {
+            app.Kill(); app.WaitForExit(5000);
+            Directory.Delete(c.Data, true);
+            app = c.StartApp(181, extra: "--render-scale 1.5 --dpi-unaware");
+        }
+        c.Note($"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}; mode: {(real ? "real 150 % display scaling, application per-monitor v2" : "fallback: 96 dpi display, application DPI-unaware and drawing at 1.5x")}");
         var m = await c.Server();
         var ins = await c.Call(m, "inspect_grid", A());
-        uint dpi = Native.GetDpiForWindow(app.MainWindowHandle);
-        c.Note($"GetDpiForWindow(app) = {dpi}; display scaling on this runner is {(dpi == 144 ? "150 %" : dpi + " dpi")}");
-        c.Check(ins.Body.ToString().Contains("DPI awareness = unaware"), "the application runs DPI-unaware while the driver runs per-monitor v2 (logged)");
+        if (real) c.Check(ins.Body.ToString().Contains("GetDpiForWindow = 144"), "the server logs GetDpiForWindow = 144 for the application window");
+        else c.Check(ins.Body.ToString().Contains("DPI awareness = unaware"), "the application runs DPI-unaware while the driver runs per-monitor v2 (logged)");
         var target = Plain(c.Facts(), 1);
         var prep = await c.Call(m, "prepare_payment", PrepArgs(target));
-        c.Check(!prep.IsError && prep.Str("result", "summary", "tx_id") == target.Tx, $"rendering at 1.5x: geometry found from the image, observed {prep.Str("result", "summary", "tx_id")}");
+        c.Check(!prep.IsError && prep.Str("result", "summary", "tx_id") == target.Tx, $"rows 1.5x taller and wider: geometry from the image, observed {prep.Str("result", "summary", "tx_id")}, expected {target.Tx} ({(prep.IsError ? prep.Code + " " + prep.Str("message") : "ok")})");
+        if (prep.IsError) return;
         var ex = await ApproveAndExecute(c, m, prep);
-        c.Check(!ex.IsError && ex.Str("result", "state") == "CONFIRMED", "payment confirmed at 1.5x rendering");
+        c.Check(!ex.IsError && ex.Str("result", "state") == "CONFIRMED", $"payment confirmed ({ex.Str("result", "state")} {ex.Code})");
         c.Check(c.Facts().Payments == 1, "exactly 1 payment");
-        File.WriteAllText(Path.Combine(c.Proof, "dpi.txt"), $"GetDpiForWindow(application) = {dpi}\nreal 150 % display scaling: {(dpi == 144 ? "demonstrated" : "not demonstrated on this runner")}\n");
+        c.Frame("dpi-150", $"{target.Ref} / {target.Tx}", prep.Str("result", "summary", "tx_id"), ex.Str("result", "state"), real ? "GetDpiForWindow = 144" : "fallback: DPI-unaware app drawing at 1.5x on a 96 dpi display");
+        File.WriteAllText(Path.Combine(c.Proof, "dpi.txt"), $"GetDpiForWindow(application) = {Native.GetDpiForWindow(app.MainWindowHandle)}\nreal 150 % display scaling: {(real ? "demonstrated" : "not demonstrated on this runner (fallback ran)")}\n");
     }
 }

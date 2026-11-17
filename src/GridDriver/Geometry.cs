@@ -35,6 +35,11 @@ public sealed class GridProfile
     public int Tolerance = 9;
     public int SelectedMaxLuminance = 110;
     public string[] Columns = { "Date", "Ref #", "Account", "Type", "Amount", "Balance", "Status" };
+    /// <summary>Text rendering of the cells at 96 dpi and scale 1, used to re-draw a value and compare it with the pixels.</summary>
+    public string FontFamily = "Segoe UI";
+    public float FontPx = 13f;
+    public int CellPadPx = 6;
+    public int RowPx = 24;
 }
 
 public sealed class GridGeometry
@@ -131,11 +136,16 @@ public sealed class GridGeometry
     }
 
     /// <summary>Scan pass: one OCR call over the visible rows, words assigned to cells by position. Used only to shortlist.</summary>
-    public List<string[]> Scan(Bitmap img, WinRtOcr ocr)
+    public List<string[]> Scan(Bitmap img, WinRtOcr ocr) => Enumerable.Range(0, Rows.Count).Select(i => ReadRow(img, ocr, i, 2)).ToList();
+
+    public Rectangle FullCell(int row, int col) => new(Spans[col].X0, Rows[row].Y0, Spans[col].X1 - Spans[col].X0, Rows[row].Y1 - Rows[row].Y0 + 1);
+    public double Scale(GridProfile p) => (RowHeight + 1) / (double)p.RowPx;
+
+    /// <summary>One OCR call over a whole row (WinRT reads lines far better than isolated cells); words go to cells by position.</summary>
+    public string[] ReadRow(Bitmap img, WinRtOcr ocr, int i, int k)
     {
-        var result = Rows.Select(_ => new string[Spans.Count]).ToList();
-        const int k = 2, m = 10;
-        for (int i = 0; i < Rows.Count; i++)
+        var cells = new string[Spans.Count];
+        const int m = 10;
         {
             // Rows are prepared one by one so a selected (dark) row is inverted on its own.
             using var prep = Ocr.Prepare(img, new Rectangle(0, Rows[i].Y0, Spans[^1].X1, Rows[i].Y1 - Rows[i].Y0 + 1), k, m, out _);
@@ -143,9 +153,9 @@ public sealed class GridGeometry
             {
                 float cx = (w.Box.X + w.Box.Width / 2 - m) / k;
                 int si = Spans.FindIndex(s => cx >= s.X0 && cx <= s.X1);
-                if (si >= 0) result[i][si] = ((result[i][si] ?? "") + " " + w.Text).Trim();
+                if (si >= 0) cells[si] = ((cells[si] ?? "") + " " + w.Text).Trim();
             }
         }
-        return result;
+        return cells;
     }
 }

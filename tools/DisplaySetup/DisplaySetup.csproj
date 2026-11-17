@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runner preparation for the DPI job only: screen resolution, then display scaling. Prints what it did. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <AssemblyName>display-setup</AssemblyName>
+  </PropertyGroup>
+</Project>

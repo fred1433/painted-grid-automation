@@ -10,4 +10,7 @@
     <Project Path="tests/Ledger.Verifier/Ledger.Verifier.csproj" />
     <Project Path="tests/Scenarios/Scenarios.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DisplaySetup/DisplaySetup.csproj" />
+  </Folder>
 </Solution>
