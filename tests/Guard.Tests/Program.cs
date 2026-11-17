@@ -29,7 +29,7 @@ public static class Program
         }
         _root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "guard-tests-" + Guid.NewGuid().ToString("N")[..8])).FullName;
         var tests = typeof(Program).GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-            .Where(m => m.Name.StartsWith("D", StringComparison.Ordinal) && m.Name.Contains('_') && m.GetParameters().Length == 0)
+            .Where(m => m.Name.Contains('_') && m.ReturnType == typeof(void) && m.GetParameters().Length == 0)
             .OrderBy(m => m.Name, StringComparer.Ordinal).ToList();
         foreach (var t in tests)
         {
@@ -98,9 +98,9 @@ public static class Program
         Assert(p.ExitCode == 0, $"child process reserved the operation (exit {p.ExitCode})");
     }
 
-    // ------------------------------------------------------------------ D1: identity as read, Unicode included
+    // ------------------------------------------------------------------ identity as read, Unicode included
 
-    static void D1_spelling_variants_stay_blocked_after_unknown()
+    static void Identity_spelling_variants_stay_blocked_after_unknown()
     {
         foreach (var variant in new[] { "Northwind  Supply", "Northwind-Supply", "NorthwindSupply", "N0rthwind Supply", "Northwind Supply." })
         {
@@ -111,7 +111,7 @@ public static class Program
         }
     }
 
-    static void D1_same_invoice_other_account_spelling_blocked()
+    static void Identity_same_invoice_other_account_spelling_blocked()
     {
         var s = NewStore(out _);
         MakeUnknown(s, "Northwind Supply", "INV-1004", "TX-0004");
@@ -119,7 +119,7 @@ public static class Program
         Assert(code == "ACCOUNT_BLOCKED_UNKNOWN", $"same invoice TX-0004 under another spelling: expected ACCOUNT_BLOCKED_UNKNOWN, got {code ?? "a new operation"}");
     }
 
-    static void D1_accented_account_blocked()
+    static void Identity_accented_account_blocked()
     {
         var s = NewStore(out _);
         MakeUnknown(s, "Café Supply", "INV-1020", "TX-0020");
@@ -129,7 +129,7 @@ public static class Program
         Assert(plain == "ACCOUNT_BLOCKED_UNKNOWN", $"'Cafe Supply' (no accent): expected ACCOUNT_BLOCKED_UNKNOWN, got {plain ?? "a new operation"}");
     }
 
-    static void D1_cli_refuses_to_approve_a_twin_of_an_unknown()
+    static void Identity_cli_refuses_to_approve_a_twin_of_an_unknown()
     {
         var s = NewStore(out var db);
         var twin = Prep(s, "Northwind Supply", "INV-1009", "TX-0009", 55_000);
@@ -138,9 +138,9 @@ public static class Program
         Assert(code == 1 && err.Contains("ACCOUNT_BLOCKED_UNKNOWN"), $"approve of a NOT_STARTED twin while INV-1004 is UNKNOWN: expected exit 1 ACCOUNT_BLOCKED_UNKNOWN, got exit {code}: {err.Trim()}");
     }
 
-    // ------------------------------------------------------------------ D2: recovery only of dead owners, conditional transitions
+    // ------------------------------------------------------------------ recovery only of dead owners, conditional transitions
 
-    static void D2_second_server_start_leaves_a_live_in_flight_alone()
+    static void Owner_second_server_start_leaves_a_live_in_flight_alone()
     {
         var a = NewStore(out var db);
         var op = Prep(a, "Ridge Freight", "INV-1030", "TX-0030");
@@ -155,7 +155,7 @@ public static class Program
         Assert(a.Get(op.OpId).State == States.Confirmed && !hist.Contains("state_unknown") && !hist.Contains("recovered"), "A confirms its own operation and the history holds no UNKNOWN step:\n" + hist);
     }
 
-    static void D2_dead_owner_is_recovered_to_unknown()
+    static void Owner_dead_owner_is_recovered_to_unknown()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Ridge Freight", "INV-1031", "TX-0031");
@@ -164,7 +164,7 @@ public static class Program
         Assert(n == 1 && s.Get(op.OpId).State == States.Unknown, $"owner process ended: expected 1 recovered to UNKNOWN, got {n}, {s.Get(op.OpId).State}");
     }
 
-    static void D2_transition_requires_the_expected_state()
+    static void Owner_transition_requires_the_expected_state()
     {
         var s = NewStore(out _);
         var op = Prep(s, "Alder Office", "INV-1040", "TX-0040");
@@ -177,7 +177,7 @@ public static class Program
         Assert(s.History(op.OpId).Count == events, "no event is written for a transition that did not apply:\n" + string.Join("\n", s.History(op.OpId)));
     }
 
-    static void D2_history_records_only_real_transitions()
+    static void Owner_history_records_only_real_transitions()
     {
         var s = NewStore(out _);
         var op = Prep(s, "Alder Office", "INV-1041", "TX-0041");
@@ -186,9 +186,9 @@ public static class Program
         Assert(s.History(op.OpId).Count == events, "RevertBeforeWrite on a NOT_STARTED operation wrote an event:\n" + string.Join("\n", s.History(op.OpId)));
     }
 
-    // ------------------------------------------------------------------ D3: a real write failure, orphaned IN_FLIGHT
+    // ------------------------------------------------------------------ a real write failure, orphaned IN_FLIGHT
 
-    static void D3_read_only_database_gives_intent_not_persisted()
+    static void Failure_read_only_database_gives_intent_not_persisted()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Quarry Tools", "INV-1050", "TX-0050");
@@ -204,7 +204,7 @@ public static class Program
         Assert(s.Get(op.OpId).State == States.InFlight, "the approval was not consumed by the failed attempt");
     }
 
-    static void D3_cli_reconciles_an_orphaned_in_flight()
+    static void Failure_cli_reconciles_an_orphaned_in_flight()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Quarry Tools", "INV-1051", "TX-0051");
@@ -213,7 +213,7 @@ public static class Program
         Assert(code == 0 && s.Get(op.OpId).State == States.NotStarted, $"IN_FLIGHT whose owner ended: expected reconcile exit 0 and NOT_STARTED, got exit {code} {s.Get(op.OpId).State}: {err.Trim()}");
     }
 
-    static void D3_cli_refuses_to_reconcile_a_live_in_flight()
+    static void Failure_cli_refuses_to_reconcile_a_live_in_flight()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Quarry Tools", "INV-1052", "TX-0052");
@@ -222,9 +222,9 @@ public static class Program
         Assert(code == 1 && s.Get(op.OpId).State == States.InFlight, $"IN_FLIGHT owned by a live process: expected exit 1, got {code} {s.Get(op.OpId).State}");
     }
 
-    // ------------------------------------------------------------------ D12: CLI values, TTL, no silent re-binding
+    // ------------------------------------------------------------------ CLI values, TTL, no silent re-binding
 
-    static void D12_cli_refuses_values_that_do_not_match_the_operation()
+    static void Values_cli_refuses_values_that_do_not_match_the_operation()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Linden Print", "INV-1060", "TX-0060", 123_400);
@@ -243,7 +243,7 @@ public static class Program
         Assert(ok == 0 && tok.Trim().Length > 20, "the exact values still get a token");
     }
 
-    static void D12_cli_ttl_is_bounded_and_never_crashes()
+    static void Values_cli_ttl_is_bounded_and_never_crashes()
     {
         var s = NewStore(out var db);
         var op = Prep(s, "Linden Print", "INV-1061", "TX-0061", 123_400);
@@ -254,7 +254,7 @@ public static class Program
         }
     }
 
-    static void D12_prepare_never_rebinds_an_existing_operation()
+    static void Values_prepare_never_rebinds_an_existing_operation()
     {
         var s = NewStore(out _);
         var first = Prep(s, "Maple Courier", "INV-1070", "TX-0070", 80_000);
@@ -263,7 +263,7 @@ public static class Program
         Assert(s.Get(first.OpId).TxId == "TX-0070" && s.Get(first.OpId).InvoiceRef == "INV-1070", $"the first operation still targets TX-0070 INV-1070, not {s.Get(first.OpId).TxId} {s.Get(first.OpId).InvoiceRef}");
     }
 
-    static void D12_same_row_under_another_reference_is_refused()
+    static void Values_same_row_under_another_reference_is_refused()
     {
         var s = NewStore(out _);
         Prep(s, "Maple Courier", "INV-1072", "TX-0072", 80_000);
@@ -271,9 +271,31 @@ public static class Program
         Assert(code == "IDENTITY_CONFLICT", $"TX-0072 read with another invoice reference: expected IDENTITY_CONFLICT, got {code ?? "a silent update"}");
     }
 
+    static void Owner_only_the_owner_may_record_the_write_input()
+    {
+        var a = NewStore(out var db);
+        var op = Prep(a, "Ridge Freight", "INV-1032", "TX-0032");
+        a.Reserve(op.OpId, Approve(a, op), "server A");
+        var b = new OperationStore(db, new ProcessOwner(1, Start));
+        int events = a.History(op.OpId).Count;
+        bool refused;
+        try { b.MarkWriteInputSent(op.OpId); refused = false; } catch (InvalidOperationException) { refused = true; }
+        Assert(refused && a.History(op.OpId).Count == events, "another process may not record the write input of an operation it does not own");
+        a.MarkWriteInputSent(op.OpId);
+        Assert(a.History(op.OpId).Count == events + 1, "the owner may");
+    }
+
+    static void Values_one_open_operation_per_invoice()
+    {
+        var s = NewStore(out _);
+        Prep(s, "Maple Courier", "INV-1074", "TX-0074", 80_000);
+        var code = RefusalCode(() => Prep(s, "Maple Courier", "INV-1074", "TX-0074", 90_000));
+        Assert(code == "INVOICE_HAS_OPERATION", $"the same invoice with another amount: expected INVOICE_HAS_OPERATION, got {code ?? "a second operation"}");
+    }
+
     // ------------------------------------------------------------------ behaviour kept from before (must pass before and after)
 
-    static void Dx_approval_is_single_use_and_bound()
+    static void Approval_approval_is_single_use_and_bound()
     {
         var s = NewStore(out _);
         var op = Prep(s, "Pioneer Water", "INV-1080", "TX-0080");

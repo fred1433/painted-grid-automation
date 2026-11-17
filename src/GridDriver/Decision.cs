@@ -23,7 +23,11 @@ public sealed class Decision
     public Decision Via(string s) { if (!Methods.Contains(s)) Methods.Add(s); return this; }
 }
 
-/// <summary>Stops the route. NOT_AVAILABLE lets the caller try the next path; every other code stops without a visual fallback.</summary>
+/// <summary>
+/// Stops the route. The adapter binds one path per surface (UIA for the search box and the dialog, keyboard to open the
+/// dialog, image and OCR for the grid); there is no automatic fallback to another path. NOT_AVAILABLE is a diagnostic
+/// result (the path does not expose that surface); ACCESS_DENIED, PATH_FAILED and every other code stop the call.
+/// </summary>
 public sealed class StopException : System.Exception
 {
     public string Code { get; }
@@ -37,5 +41,6 @@ public static class Codes
         AmbiguousTarget = "AMBIGUOUS_TARGET", FocusLost = "FOCUS_LOST", AmbiguousReading = "AMBIGUOUS", NotFound = "NOT_FOUND",
         AppNotResponding = "APP_NOT_RESPONDING", WindowNotFound = "WINDOW_NOT_FOUND", IdentityChanged = "WINDOW_IDENTITY_CHANGED",
         SelectionNotObserved = "SELECTION_NOT_OBSERVED", TargetChanged = "TARGET_CHANGED", GeometryUnconfirmed = "GEOMETRY_UNCONFIRMED",
-        AmountMismatch = "AMOUNT_MISMATCH", DialogNotOpened = "DIALOG_NOT_OPENED", DialogMismatch = "DIALOG_MISMATCH";
+        AmountMismatch = "AMOUNT_MISMATCH", DialogNotOpened = "DIALOG_NOT_OPENED", DialogMismatch = "DIALOG_MISMATCH",
+        PathFailed = "PATH_FAILED", ScanIncomplete = "SCAN_INCOMPLETE", UnexpectedError = "UNEXPECTED_ERROR";
 }

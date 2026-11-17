@@ -14,8 +14,6 @@ public sealed class DriverConfig
     public string DialogTitle { get; set; } = "Record payment";
     public string EvidenceDir { get; set; } = "evidence";
     public string TessdataDir { get; set; } = "tessdata";
-    /// <summary>Test-only fault for one reader, named and logged. Null in normal runs.</summary>
-    public string? OcrFault { get; set; }
 }
 
 /// <summary>
@@ -43,22 +41,27 @@ public sealed class TargetWindow
         }, IntPtr.Zero);
         var allowed = new List<TargetWindow>();
         string want = Path.GetFullPath(cfg.AllowedExe);
+        int? mine = Native.IntegrityLevel(Environment.ProcessId, out _);
         foreach (var h in windows)
         {
             int pid = Native.Pid(h);
-            string exe, start;
-            try
-            {
-                using var p = Process.GetProcessById(pid);
-                exe = p.MainModule?.FileName ?? "";
-                start = p.StartTime.ToUniversalTime().ToString("O");
-            }
-            catch (Exception ex) { d.Obs($"window pid {pid}: cannot read its executable ({ex.GetType().Name})"); continue; }
+            string? exe = Native.ImagePath(pid, out var why);
+            if (exe == null) { d.Obs($"window '{Native.Text(h)}' pid {pid}: executable path unreadable ({why}); not considered"); continue; }
             if (!string.Equals(Path.GetFullPath(exe), want, StringComparison.OrdinalIgnoreCase))
             {
                 d.Obs($"rejected window '{Native.Text(h)}' pid {pid}: executable {exe} is not on the allowlist");
                 continue;
             }
+            // UIPI: input and messages from a lower integrity level are dropped without an error. Refuse instead of clicking into nothing.
+            int? theirs = Native.IntegrityLevel(pid, out var whyIl);
+            if (theirs == null || mine == null || theirs > mine)
+                throw new StopException(Codes.AccessDenied, theirs == null
+                    ? $"pid {pid} is allowlisted but its integrity level cannot be read ({whyIl}); if it runs elevated, Windows would drop this server's input without an error; no input sent"
+                    : $"pid {pid} runs at integrity {Native.LevelName(theirs)}, this server at {Native.LevelName(mine)}: Windows drops input and messages sent to a higher level (UIPI) without an error; no input sent", d);
+            string start;
+            try { using var p = Process.GetProcessById(pid); start = p.StartTime.ToUniversalTime().ToString("O"); }
+            catch (Exception ex) { d.Obs($"window pid {pid}: start time unreadable ({ex.GetType().Name})"); continue; }
+            d.Obs($"pid {pid} integrity {Native.LevelName(theirs)}, this server {Native.LevelName(mine)}");
             allowed.Add(new TargetWindow(h, pid, exe, start, Native.Text(h)));
         }
         if (allowed.Count == 0) throw new StopException(Codes.WindowNotFound, $"no visible window titled '{cfg.TitlePrefix}*' from {want}", d);
@@ -102,6 +105,19 @@ public sealed class TargetWindow
             throw new StopException(Codes.WindowBlocked, $"point {p.X},{p.Y} is covered by window '{Native.Text(root)}' class {Native.Class(root)} pid {pid}; no input sent", d);
         }
         d.Met($"point {p.X},{p.Y} belongs to the target window");
+    }
+
+    /// <summary>A capture of a covered grid is not evidence: every sampled point of the area must belong to the target window.</summary>
+    public void EnsureAreaUnobstructed(Rectangle r, Decision d)
+    {
+        for (int i = 0; i < 5; i++)
+            for (int j = 0; j < 5; j++)
+            {
+                var p = new Point(r.Left + 4 + (r.Width - 8) * i / 4, r.Top + 4 + (r.Height - 8) * j / 4);
+                var root = Native.GetAncestor(Native.WindowFromPoint(new Native.POINT { X = p.X, Y = p.Y }), Native.GA_ROOT);
+                if (root != Hwnd)
+                    throw new StopException(Codes.WindowBlocked, $"the grid is partly covered at {p.X},{p.Y} by window '{Native.Text(root)}' class {Native.Class(root)} pid {Native.Pid(root)}; its capture is not used and no input is sent", d);
+            }
     }
 
     /// <summary>Brings the window to the foreground with a real click on its title bar, or stops with FOCUS_LOST.</summary>

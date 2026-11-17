@@ -38,6 +38,51 @@ public static class Native
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, StringBuilder l, uint flags, uint timeout, out IntPtr result);
     [DllImport("oleacc.dll")] public static extern int AccessibleObjectFromWindow(IntPtr h, uint id, ref Guid iid, [MarshalAs(UnmanagedType.IUnknown)] out object acc);
 
+    // Process identity and integrity level, readable with PROCESS_QUERY_LIMITED_INFORMATION (also on an elevated process).
+    [DllImport("kernel32.dll", SetLastError = true)] public static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
+    [DllImport("kernel32.dll", SetLastError = true)] public static extern bool CloseHandle(IntPtr h);
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] public static extern bool QueryFullProcessImageName(IntPtr h, uint flags, StringBuilder name, ref uint size);
+    [DllImport("advapi32.dll", SetLastError = true)] public static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+    [DllImport("advapi32.dll", SetLastError = true)] public static extern bool GetTokenInformation(IntPtr token, int cls, IntPtr info, uint len, out uint ret);
+    [DllImport("advapi32.dll")] public static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
+    [DllImport("advapi32.dll")] public static extern IntPtr GetSidSubAuthority(IntPtr sid, uint i);
+    public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000, TOKEN_QUERY = 0x0008;
+
+    public static string? ImagePath(int pid, out string why)
+    {
+        IntPtr h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == IntPtr.Zero) { why = $"OpenProcess error {Marshal.GetLastWin32Error()}"; return null; }
+        try
+        {
+            var sb = new StringBuilder(1024); uint n = (uint)sb.Capacity;
+            if (!QueryFullProcessImageName(h, 0, sb, ref n)) { why = $"QueryFullProcessImageName error {Marshal.GetLastWin32Error()}"; return null; }
+            why = "ok"; return sb.ToString();
+        }
+        finally { CloseHandle(h); }
+    }
+
+    /// <summary>Mandatory integrity level RID (0x1000 low, 0x2000 medium, 0x3000 high, 0x4000 system), or null with the reason.</summary>
+    public static int? IntegrityLevel(int pid, out string why)
+    {
+        IntPtr h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == IntPtr.Zero) { why = $"OpenProcess error {Marshal.GetLastWin32Error()}"; return null; }
+        IntPtr tok = IntPtr.Zero, buf = IntPtr.Zero;
+        try
+        {
+            if (!OpenProcessToken(h, TOKEN_QUERY, out tok)) { why = $"OpenProcessToken error {Marshal.GetLastWin32Error()}"; return null; }
+            GetTokenInformation(tok, 25, IntPtr.Zero, 0, out uint len);
+            buf = Marshal.AllocHGlobal((int)len);
+            if (!GetTokenInformation(tok, 25, buf, len, out _)) { why = $"GetTokenInformation error {Marshal.GetLastWin32Error()}"; return null; }
+            IntPtr sid = Marshal.ReadIntPtr(buf);
+            int count = Marshal.ReadByte(GetSidSubAuthorityCount(sid));
+            why = "ok";
+            return Marshal.ReadInt32(GetSidSubAuthority(sid, (uint)(count - 1)));
+        }
+        finally { if (buf != IntPtr.Zero) Marshal.FreeHGlobal(buf); if (tok != IntPtr.Zero) CloseHandle(tok); CloseHandle(h); }
+    }
+
+    public static string LevelName(int? rid) => rid switch { null => "unreadable", < 0x2000 => $"low (0x{rid:X})", < 0x3000 => $"medium (0x{rid:X})", < 0x4000 => $"high (0x{rid:X})", _ => $"system (0x{rid:X})" };
+
     public const uint WM_NULL = 0x0000, WM_GETTEXT = 0x000D, WM_GETTEXTLENGTH = 0x000E, SMTO_ABORTIFHUNG = 0x0002, GA_ROOT = 2, GA_ROOTOWNER = 3, GW_OWNER = 4;
     public const uint OBJID_CLIENT = 0xFFFFFFFC;
     public static readonly Guid IID_IAccessible = new("618736E0-3C3D-11CF-810C-00AA00389B71");

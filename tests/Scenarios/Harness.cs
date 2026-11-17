@@ -18,7 +18,7 @@ namespace Scenarios;
 
 public sealed class Paths
 {
-    public string App = "", Server = "", Operator = "", Tessdata = "", Out = "proof", Work = "work", Repo = ".";
+    public string App = "", Server = "", Operator = "", Tessdata = "", Out = "proof", Work = "work", Repo = ".", Launcher = "";
 }
 
 public sealed record CallResult(bool IsError, JsonElement Body, string Tool)
@@ -78,20 +78,23 @@ public sealed class Ctx : IAsyncDisposable
 
     public void Track(Process p) => _procs.Add(p);
 
-    public async Task<McpClient> Server(Dictionary<string, string?>? env = null)
+    /// <param name="integrity">null: same level as this process; "medium" or "low": started through run-at-integrity.</param>
+    public async Task<McpClient> Server(Dictionary<string, string?>? env = null, string? integrity = null)
     {
         var e = env ?? new Dictionary<string, string?>();
+        var args = new List<string> { "--allow-exe", P.App, "--db", Db, "--evidence", Evidence, "--tessdata", P.Tessdata };
+        if (integrity != null) args.InsertRange(0, new[] { integrity, P.Server });
         var t = new StdioClientTransport(new StdioClientTransportOptions
         {
             Name = "ledger-grid",
-            Command = P.Server,
-            Arguments = new[] { "--allow-exe", P.App, "--db", Db, "--evidence", Evidence, "--tessdata", P.Tessdata },
+            Command = integrity != null ? P.Launcher : P.Server,
+            Arguments = args.ToArray(),
             EnvironmentVariables = e,
             WorkingDirectory = Dir,
         });
         var c = await McpClient.CreateAsync(t);
         _clients.Add(c);
-        Note($"MCP server started{(e.Count > 0 ? " with " + string.Join(",", e.Keys) : "")}");
+        Note($"MCP server started{(e.Count > 0 ? " with " + string.Join(",", e.Select(kv => kv.Key + "=" + kv.Value)) : "")}{(integrity != null ? " at " + integrity + " integrity" : "")}");
         return c;
     }
 
@@ -138,24 +141,29 @@ public sealed class Ctx : IAsyncDisposable
         using var shot = new Bitmap(w, h, PixelFormat.Format24bppRgb);
         using (var g = Graphics.FromImage(shot)) g.CopyFromScreen(0, 0, 0, 0, new Size(w, h));
         shot.Save(Path.Combine(Proof, $"screen-{label}.png"), ImageFormat.Png);
-        const int band = 178;
+        const int width = 66, line = 25;
+        var rows = new List<(string Key, string Text)>();
+        foreach (var (k, v) in new[] { ("requested", requested), ("observed", observed), ("state", state), ("reason", reason) })
+        {
+            var lines = Wrap(v, width).Take(k is "reason" or "observed" ? 3 : 1).ToList();
+            for (int i = 0; i < lines.Count; i++) rows.Add((i == 0 ? k : "", lines[i]));
+        }
+        int band = 56 + rows.Count * line + 14;
         using var f = new Bitmap(w, h + band, PixelFormat.Format24bppRgb);
         using (var g = Graphics.FromImage(f))
         {
             g.Clear(Color.FromArgb(28, 27, 25));
             g.DrawImage(shot, 0, 0);
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using var big = new Font("Segoe UI Semibold", 17f, GraphicsUnit.Pixel);
-            using var small = new Font("Consolas", 14f, GraphicsUnit.Pixel);
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            using var big = new Font("Segoe UI Semibold", 27f, GraphicsUnit.Pixel);
+            using var keyFont = new Font("Segoe UI", 19f, GraphicsUnit.Pixel);
+            using var small = new Font("Consolas", 20f, GraphicsUnit.Pixel);
             using var accent = new SolidBrush(Color.FromArgb(242, 201, 76));
-            using var text = new SolidBrush(Color.FromArgb(236, 233, 226));
-            g.DrawString($"{Name}: {label}", big, accent, 14, h + 10);
-            int y = h + 40;
-            foreach (var (k, v) in new[] { ("requested", requested), ("observed", observed), ("state", state), ("reason", reason) })
-            {
-                var lines = Wrap(v, 112).Take(k is "reason" or "observed" ? 3 : 1).ToList();
-                for (int i = 0; i < lines.Count; i++) { g.DrawString((i == 0 ? k.PadRight(11) : new string(' ', 11)) + lines[i], small, text, 14, y); y += 18; }
-            }
+            using var grey = new SolidBrush(Color.FromArgb(170, 166, 158));
+            using var text = new SolidBrush(Color.FromArgb(240, 237, 230));
+            g.DrawString($"{Name}: {label}", big, accent, 16, h + 12);
+            int y = h + 56;
+            foreach (var (k, v) in rows) { g.DrawString(k, keyFont, grey, 16, y + 1); g.DrawString(v, small, text, 130, y); y += line; }
         }
         var dir = Directory.CreateDirectory(Path.Combine(P.Out, "frames")).FullName;
         f.Save(Path.Combine(dir, $"{Interlocked.Increment(ref FrameSeq):00}-{Name}-{label}.png"), ImageFormat.Png);
@@ -194,6 +202,26 @@ public sealed class Ctx : IAsyncDisposable
 
 public static class Native
 {
+    public delegate bool EnumProc(IntPtr hwnd, IntPtr lParam);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr l);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder sb, int max);
+
+    /// <summary>Minimises the console windows on the desktop (the runner's own console) so captures show the application.</summary>
+    public static List<string> MinimiseConsoles()
+    {
+        var done = new List<string>();
+        EnumWindows((h, _) =>
+        {
+            var sb = new StringBuilder(256); GetClassName(h, sb, sb.Capacity);
+            string cls = sb.ToString();
+            if (IsWindowVisible(h) && cls is "ConsoleWindowClass" or "CASCADIA_HOSTING_WINDOW_CLASS") { ShowWindow(h, 6); done.Add(cls); }
+            return true;
+        }, IntPtr.Zero);
+        return done;
+    }
+
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int i);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);

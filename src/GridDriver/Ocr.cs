@@ -89,12 +89,12 @@ public static class Ocr
     public static readonly Regex StrictDate = new(@"^\d{4}-\d{2}-\d{2}$", RegexOptions.CultureInvariant);
     public static readonly Regex StrictRef = new(@"^(INV|PMT)-\d{4}$", RegexOptions.CultureInvariant);
 
-    /// <summary>Loose folding, used only to shortlist candidates during a scan. Never used to accept a value.</summary>
-    public static string Fold(string s)
-    {
-        var t = new string((s ?? "").ToUpperInvariant().Where(char.IsLetterOrDigit).ToArray());
-        return t.Replace('O', '0').Replace('I', '1').Replace('L', '1').Replace('S', '5');
-    }
+    /// <summary>
+    /// Loose folding (Guard.Identity.Fold): shortlists rows during a scan, compares the account the readers agreed on with
+    /// the request, and keys the retry block. Ref #, Date and Amount are accepted only on the exact string both readers
+    /// agree on, confirmed by the pixels; the account is accepted when both readers agree exactly and it folds to the request.
+    /// </summary>
+    public static string Fold(string s) => Guard.Identity.Fold(s);
 
     static string Digits(string s) => s.Replace('O', '0').Replace('o', '0').Replace('I', '1').Replace('l', '1').Replace('|', '1');
 
@@ -225,7 +225,10 @@ public static class Glyphs
                 if (pa != pb) differ++;
             }
         detail = $"{differ} of {inkPixels} ink pixels differ";
-        if (differ * 4 > inkPixels) return $"{differ} of {inkPixels} ink pixels differ from '{text}' re-drawn in {prof.FontFamily} {prof.FontPx * scale:0.#}px";
+        // Exact match. This holds here because the witness application and this check draw with the same GDI call
+        // (TextRenderer), the same font and the same machine settings. A real vendor grid (another text API, ClearType,
+        // other hinting) would need a calibrated profile per application, with a measured tolerance per glyph.
+        if (differ > 0) return $"{differ} of {inkPixels} ink pixels differ from '{text}' re-drawn in {prof.FontFamily} {prof.FontPx * scale:0.#}px";
         return null;
     }
 }

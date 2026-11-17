@@ -25,7 +25,6 @@ public static class Program
             AllowedExe = Arg("--allow-exe", "PGA_ALLOW_EXE", ""),
             EvidenceDir = Arg("--evidence", "PGA_EVIDENCE", "evidence"),
             TessdataDir = Arg("--tessdata", "PGA_TESSDATA", "tessdata"),
-            OcrFault = Environment.GetEnvironmentVariable("PGA_FAULT_OCR"),
         };
         string db = Arg("--db", "PGA_DB", Path.Combine("state", "operations.db"));
 

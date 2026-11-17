@@ -18,7 +18,8 @@ public sealed class PathResult
 
 /// <summary>
 /// Capability diagnostic, per surface: what each path really returns on this window. Raw dumps are written as files
-/// next to the step journal so they can be read without trusting this summary.
+/// next to the step journal so they can be read without trusting this summary. It reports; it does not choose a path at
+/// run time. ACCESS_DENIED or PATH_FAILED on any path stops it.
 /// </summary>
 public static class Diagnostics
 {
@@ -62,26 +63,28 @@ public static class Diagnostics
         results.Add(gridRes); results.Add(toolbarRes); results.Add(searchRes);
 
         // 2. MSAA (IAccessible on the grid window). UIA also surfaces this through its MSAA proxy / LegacyIAccessible.
+        // Access denied and failures stop the diagnostic (no image or OCR step after them); only "no rows exposed" is NOT_AVAILABLE.
         var msaa = new PathResult { Path = "MSAA", Surface = "grid" };
-        if (gridHwnd != IntPtr.Zero)
+        if (gridHwnd == IntPtr.Zero) { msaa.Result = Codes.NotAvailable; msaa.Observations.Add("grid window handle not found through UIA"); }
+        else
         {
-            try
+            var seen = Uia.Call(t, gridHwnd, "MSAA AccessibleObjectFromWindow", () =>
             {
                 var iid = Native.IID_IAccessible;
-                int hr = Native.AccessibleObjectFromWindow(gridHwnd, Native.OBJID_CLIENT, ref iid, out object o);
-                if (hr != 0 || o is not Accessibility.IAccessible acc) { msaa.Result = Codes.NotAvailable; msaa.Observations.Add($"AccessibleObjectFromWindow hr=0x{hr:X8}"); }
-                else
-                {
-                    int kids = acc.accChildCount;
-                    object role = acc.get_accRole(0);
-                    string? name = acc.get_accName(0);
-                    msaa.Result = kids == 0 ? Codes.NotAvailable : "PARTIAL";
-                    msaa.Observations.Add($"AccessibleObjectFromWindow ok: role={role} name='{name}' accChildCount={kids}");
-                }
-            }
-            catch (Exception ex) { msaa.Result = Codes.NotAvailable; msaa.Observations.Add(ex.GetType().Name + ": " + ex.Message); }
+                object? o = null;
+                int hr;
+                if (Faults.Has("msaa-access-denied")) { hr = unchecked((int)0x80070005); d.Obs("FAULT msaa-access-denied: AccessibleObjectFromWindow made to return E_ACCESSDENIED"); }
+                else hr = Native.AccessibleObjectFromWindow(gridHwnd, Native.OBJID_CLIENT, ref iid, out o);
+                File.WriteAllText(Path.Combine(ev.Dir, "diagnostic-msaa.txt"), $"AccessibleObjectFromWindow hr=0x{hr:X8}");
+                if (hr == unchecked((int)0x80070005)) throw new StopException(Codes.AccessDenied, $"MSAA: AccessibleObjectFromWindow returned E_ACCESSDENIED (0x{hr:X8}); the diagnostic stops here, with no image or OCR fallback", d);
+                if (hr != 0) throw new StopException(Codes.PathFailed, $"MSAA: AccessibleObjectFromWindow failed with 0x{hr:X8}; the diagnostic stops here", d);
+                if (o is not Accessibility.IAccessible acc) throw new StopException(Codes.PathFailed, "MSAA: the object returned is not an IAccessible", d);
+                int kids = acc.accChildCount;
+                return (kids, role: acc.get_accRole(0), name: acc.get_accName(0));
+            }, d);
+            msaa.Result = seen.kids == 0 ? Codes.NotAvailable : "PARTIAL";
+            msaa.Observations.Add($"AccessibleObjectFromWindow ok: role={seen.role} name='{seen.name}' accChildCount={seen.kids}");
         }
-        else { msaa.Result = Codes.NotAvailable; msaa.Observations.Add("grid window handle not found through UIA"); }
         results.Add(msaa);
         File.WriteAllText(Path.Combine(ev.Dir, "diagnostic-msaa.txt"), string.Join(Environment.NewLine, msaa.Observations));
 
@@ -114,7 +117,7 @@ public static class Diagnostics
         results.Add(new PathResult
         {
             Path = "Keyboard", Surface = "grid and toolbar", Result = "CONFIGURED",
-            Observations = { "declared by this adapter: Ctrl+P opens the payment dialog for the selected row; F6 toggles the sort; arrow keys move the selection", "keyboard is tried before any pixel click on the painted toolbar" },
+            Observations = { "declared by this adapter: Ctrl+P opens the payment dialog for the selected row; F6 toggles the sort; arrow keys move the selection", "this adapter never clicks the painted toolbar: the dialog is opened with Ctrl+P" },
         });
         d.Obs($"diagnostic: {string.Join("; ", results.Select(r => $"{r.Path}/{r.Surface}={r.Result}"))}");
         return results;

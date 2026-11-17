@@ -10,7 +10,8 @@ dotnet build src/Ledger.App/Ledger.App.csproj -c Release -o out/app
 dotnet build src/LedgerMcp/LedgerMcp.csproj -c Release -o out/mcp
 dotnet build src/LedgerOperator/LedgerOperator.csproj -c Release -o out/op
 dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
-$runArgs = @('--app', 'out/app/LedgerApp.exe', '--server', 'out/mcp/ledger-mcp.exe', '--operator', 'out/op/ledger-operator.exe', '--tessdata', 'tessdata', '--out', 'proof-local', '--work', 'work-local', '--repo', '.')
+dotnet build tools/RunAtIntegrity/RunAtIntegrity.csproj -c Release -o out/run-at-integrity
+$runArgs = @('--launcher', 'out/run-at-integrity/run-at-integrity.exe', '--app', 'out/app/LedgerApp.exe', '--server', 'out/mcp/ledger-mcp.exe', '--operator', 'out/op/ledger-operator.exe', '--tessdata', 'tessdata', '--out', 'proof-local', '--work', 'work-local', '--repo', '.')
 if ($Only -ne "") { $runArgs += @('--only', $Only) }
 & ./out/scenarios/scenarios.exe @runArgs
 $code = $LASTEXITCODE

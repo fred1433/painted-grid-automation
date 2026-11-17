@@ -3,12 +3,14 @@
        Plays the human approver through the operator CLI. Checks outcomes against the application's own journal. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>scenarios</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
     <ProjectReference Include="..\Ledger.Verifier\Ledger.Verifier.csproj" />
+    <!-- Only for scenario 31 (the pixel check called directly) and for reading integrity levels. -->
+    <ProjectReference Include="..\..\src\GridDriver\GridDriver.csproj" />
   </ItemGroup>
 </Project>

@@ -22,6 +22,7 @@ jobs:
           dotnet build src/LedgerMcp/LedgerMcp.csproj -c Release -o out/mcp
           dotnet build src/LedgerOperator/LedgerOperator.csproj -c Release -o out/op
           dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
+          dotnet build tools/RunAtIntegrity/RunAtIntegrity.csproj -c Release -o out/run-at-integrity
       - name: Versions
         shell: pwsh
         run: |
@@ -34,7 +35,7 @@ jobs:
           $v | Tee-Object -FilePath proof-run/versions.txt
       - name: Scenarios (MCP client -> stdio server -> screen capture -> SendInput)
         shell: pwsh
-        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --out proof-run --work work --repo . --skip 22
+        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --launcher out/run-at-integrity/run-at-integrity.exe --out proof-run --work work --repo . --skip 22
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -56,7 +57,9 @@ jobs:
           New-Item -ItemType Directory -Force proof-guard | Out-Null
           dotnet build tests/Guard.Tests/Guard.Tests.csproj -c Release -o out/guard-tests
           ./out/guard-tests/guard-tests.exe | Tee-Object -FilePath proof-guard/guard-tests.txt
-          exit $LASTEXITCODE
+          $code = $LASTEXITCODE
+          "commit: $env:GITHUB_SHA" | Add-Content proof-guard/guard-tests.txt
+          exit $code
       - uses: actions/upload-artifact@v4
         if: always()
         with:

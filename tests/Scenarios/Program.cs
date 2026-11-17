@@ -58,7 +58,7 @@ public static class Program
         ("08-sort-between-locate-and-write", "the grid is re-sorted after prepare: execute locates again by business identity", SortBetween),
         ("09-parasite-window", "a topmost window covers the grid: no input, operation back to NOT_STARTED", Parasite),
         ("10-decoy-window", "a window with the same title from another executable is rejected", Decoy),
-        ("11-approval-checks", "missing, foreign, other row, other amount, other process, expired and reused tokens", Approvals),
+        ("11-approval-checks", "EUR refused; the CLI issues no token for other values; missing, unknown, foreign, expired, previous-process and reused tokens refused", Approvals),
         ("12-concurrent-same-approval", "two servers execute with the same token at once: one write", ConcurrentSameApproval),
         ("13-concurrent-two-operations", "two operations at once on one server: serialised, both correct", ConcurrentTwo),
         ("14-freeze-after-post", "the app freezes after saving the payment: UNKNOWN, restart, new request refused, one payment", FreezeAfterPost),
@@ -72,7 +72,12 @@ public static class Program
         ("23-guard-only-defense", "the payment was saved but the restarted app still shows the invoice Open: only UNKNOWN refuses it, whatever the account spelling", GuardOnlyDefense),
         ("24-second-server-mid-write", "a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first", SecondServerMidWrite),
         ("26-slow-save-left-alone", "the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click", SlowSave),
+        ("25-unexpected-exception", "a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN that a human can reconcile; never left IN_FLIGHT", UnexpectedException),
         ("27-full-coverage-500-rows", "500 rows, look-alike rows at both ends, scan started from the bottom: every row is read before any click", FullCoverage),
+        ("28-real-wrong-click", "a real click lands on the neighbouring row: the highlighted row is read, the route stops, no second click, no payment", WrongClick),
+        ("29-access-denied", "the application runs above the server's integrity level, and MSAA answers E_ACCESSDENIED: ACCESS_DENIED, no fallback, no input", AccessDenied),
+        ("30-uia-failures", "an error inside a UIA call keeps its code; a UIA call past its time limit writes no further field", UiaFailures),
+        ("31-pixel-check-strict", "1,000.00 drawn, 1,200.00 claimed (and the reverse): refused; the same value: accepted", PixelCheck),
         ("22-dpi-scale", "display scaling 1.5 when the job could set it (GetDpiForWindow = 144), else the named fallback", Dpi),
     };
 
@@ -91,10 +96,13 @@ public static class Program
                 case "--repo": P.Repo = Path.GetFullPath(args[++i]); break;
                 case "--only": Only = args[++i].Split(','); break;
                 case "--skip": Skip = args[++i].Split(','); break;
+                case "--launcher": P.Launcher = Path.GetFullPath(args[++i]); break;
             }
         foreach (var (k, v) in new[] { ("--app", P.App), ("--server", P.Server), ("--operator", P.Operator), ("--tessdata", P.Tessdata) })
             if (v == "" || !(File.Exists(v) || Directory.Exists(v))) { Console.Error.WriteLine($"missing or not found: {k} '{v}'"); return 2; }
         Directory.CreateDirectory(P.Out);
+        var minimised = Native.MinimiseConsoles();
+        Console.WriteLine($"minimised {minimised.Count} console window(s) so the captures show the application");
         var summary = new List<object>();
         int failed = 0;
         foreach (var (name, what, run) in All.Where(s => (Only == null || Only.Any(o => s.Name.StartsWith(o))) && (Skip == null || !Skip.Any(o => s.Name.StartsWith(o)))))
@@ -141,6 +149,9 @@ public static class Program
         var inspect = tools.Single(t => t.Name == "inspect_grid").ProtocolTool.Annotations;
         c.Check(exec?.DestructiveHint == true && exec?.ReadOnlyHint == false, "execute_payment is annotated destructive (a hint only; enforcement is at run time)");
         c.Check(inspect?.ReadOnlyHint == true, "inspect_grid is annotated read-only");
+        var find = tools.Single(t => t.Name == "find_row").ProtocolTool.Annotations;
+        var prepA = tools.Single(t => t.Name == "prepare_payment").ProtocolTool.Annotations;
+        c.Check(find?.ReadOnlyHint == false && find?.DestructiveHint == false && prepA?.IdempotentHint == false, "find_row is not annotated read-only (it scrolls and may set the search box); prepare_payment is not annotated idempotent (it clicks a row)");
         var bad = await c.Call(m, "find_row", A(("amount", "1.000,00")));
         c.Check(bad.IsError && bad.Code == "INVALID_ARGUMENT", "a malformed amount returns a structured error INVALID_ARGUMENT");
         var none = await c.Call(m, "operation_status", A(("operation_id", "OP-00000000")));
@@ -261,6 +272,12 @@ public static class Program
         c.Check(prep.Str("decision", "discriminant").Contains("Ref #") || prep.Str("result", "decision", "discriminant").Contains("Ref #") || prep.Body.ToString().Contains("Ref # ("), "the decision names Ref # as the discriminant");
         c.Check(c.Facts().LastSelectedTx == second.Tx, $"the application's last selection is {c.Facts().LastSelectedTx}");
         c.Frame("duplicate-selected", $"{second.Ref} / {second.Tx}", prep.Str("result", "summary", "tx_id"), prep.Str("result", "state"), "two rows share Account, Type and Amount; Ref # decides");
+        // One of the two look-alike rows misread by reader A's scan: it must not make the other one look unique.
+        var mg = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = $"garble-scan:{pair[0].Ref}" });
+        int clicks = c.Facts().MouseSelections;
+        var garbled = await c.Call(mg, "prepare_payment", PrepArgs(pair[1], withRef: false));
+        c.Check(garbled.IsError && garbled.Code == "AMBIGUOUS_TARGET" && garbled.Str("message").Contains("misread"), $"with {pair[0].Ref}'s account misread in the scan, the request without reference still stops: {garbled.Code}: {garbled.Str("message")}");
+        c.Check(c.Facts().MouseSelections == clicks, "no click for it");
     }
 
     static async Task OffScreen(Ctx c)
@@ -339,25 +356,42 @@ public static class Program
         var m = await c.Server();
         var f = c.Facts();
         var x = Plain(f, 0); var y = Plain(f, 1, new[] { x.Account });
+        int clicks0 = c.Facts().MouseSelections;
+        var eur = await c.Call(m, "prepare_payment", A(("account", x.Account), ("amount", Money(x.AmountCents)), ("pay_date", PayDate), ("invoice_ref", x.Ref), ("currency", "EUR")));
+        c.Check(eur.IsError && eur.Code == "CURRENCY_NOT_SUPPORTED" && c.Facts().MouseSelections == clicks0, $"a preparation in EUR is refused before anything is read or clicked: {eur.Code}");
         var px = await c.Call(m, "prepare_payment", PrepArgs(x));
         var py = await c.Call(m, "prepare_payment", PrepArgs(y));
         c.Check(!px.IsError && !py.IsError, "two operations prepared");
         string opX = px.Str("result", "operation_id"), opY = py.Str("result", "operation_id");
         int pid = px.Result.GetProperty("summary").GetProperty("pid").GetInt32();
         string txX = px.Str("result", "summary", "tx_id"), txY = py.Str("result", "summary", "tx_id"), amtX = Money(x.AmountCents);
+        foreach (var (what, tx, amt, cur, p) in new[] { ("another row", txY, amtX, "USD", pid), ("another amount", txX, Money(x.AmountCents + 100), "USD", pid), ("another currency", txX, amtX, "EUR", pid), ("another process", txX, amtX, "USD", pid + 1) })
+        {
+            var (code, outp, err) = c.Operator($"approve --db \"{c.Db}\" --op {opX} --tx {tx} --amount {amt} --currency {cur} --pid {p}");
+            c.Check(code == 1 && outp.Trim() == "" && err.Contains("APPROVAL_VALUES_MISMATCH"), $"operator approve with {what}: exit {code}, no token ({err.Trim().Split('\n').Last()})");
+        }
+        foreach (var ttl in new[] { "-10", "99999999999" })
+        {
+            var (code, outp, err) = c.Operator($"approve --db \"{c.Db}\" --op {opX} --tx {txX} --amount {amtX} --currency USD --pid {pid} --ttl-seconds {ttl}");
+            c.Check(code == 2 && outp.Trim() == "", $"operator approve --ttl-seconds {ttl}: exit {code}, no token ({err.Trim()})");
+        }
         async Task<string> Exec(string? token) => (await c.Call(m, "execute_payment", A(("operation_id", opX), ("approval_token", token)))).Code;
         c.Check(await Exec(null) == "APPROVAL_REQUIRED", "no token: APPROVAL_REQUIRED");
         c.Check(await Exec("not-a-real-token") == "APPROVAL_UNKNOWN", "a token that was never issued: APPROVAL_UNKNOWN");
         c.Check(await Exec(c.Approve(opY, txY, Money(y.AmountCents), pid)) == "APPROVAL_MISMATCH", "a token issued for another operation: APPROVAL_MISMATCH");
-        c.Check(await Exec(c.Approve(opX, txY, amtX, pid)) == "APPROVAL_MISMATCH", "a token issued for another row: APPROVAL_MISMATCH");
-        c.Check(await Exec(c.Approve(opX, txX, Money(x.AmountCents + 100), pid)) == "APPROVAL_MISMATCH", "a token issued for another amount: APPROVAL_MISMATCH");
-        c.Check(await Exec(c.Approve(opX, txX, amtX, pid + 1)) == "APPROVAL_MISMATCH", "a token issued for another process: APPROVAL_MISMATCH");
-        c.Check(await Exec(c.Approve(opX, txX, amtX, pid, currency: "EUR")) == "APPROVAL_MISMATCH", "a token issued in another currency: APPROVAL_MISMATCH");
         string shortLived = c.Approve(opX, txX, amtX, pid, ttl: 1);
         Thread.Sleep(2500);
         c.Check(await Exec(shortLived) == "APPROVAL_EXPIRED", "an expired token: APPROVAL_EXPIRED");
-        c.Check(c.Facts().Payments == 0 && c.Facts().Count("dialog_opened") == 0, "after eight refused tokens: no payment, no dialog opened");
-        string good = c.Approve(opX, txX, amtX, pid);
+        // A token is bound to the application process: after a restart the operation is prepared again for the new process.
+        string early = c.Approve(opX, txX, amtX, pid);
+        app.Kill(); app.WaitForExit(5000);
+        app = c.StartApp(81);
+        var px2 = await c.Call(m, "prepare_payment", PrepArgs(x));
+        int pid2 = px2.IsError ? 0 : px2.Result.GetProperty("summary").GetProperty("pid").GetInt32();
+        c.Check(!px2.IsError && px2.Str("result", "operation_id") == opX && pid2 != pid, $"after the application restarts, the same operation is prepared again for process {pid2}");
+        c.Check(await Exec(early) == "APPROVAL_MISMATCH", "a token issued for the previous application process: APPROVAL_MISMATCH");
+        c.Check(c.Facts().Payments == 0 && c.Facts().Count("dialog_opened") == 0, "after the refused tokens: no payment, no dialog opened");
+        string good = c.Approve(opX, txX, amtX, pid2);
         var ok = await c.Call(m, "execute_payment", A(("operation_id", opX), ("approval_token", good)));
         c.Check(!ok.IsError && ok.Str("result", "state") == "CONFIRMED", "the exact token: CONFIRMED");
         c.Check(await Exec(good) == "APPROVAL_ALREADY_USED", "the same token again: APPROVAL_ALREADY_USED");
@@ -384,6 +418,8 @@ public static class Program
         c.Check(confirmed == 1, $"two servers, one token, called at once: {confirmed} CONFIRMED");
         c.Check(other != null && other.Code is "APPROVAL_ALREADY_USED" or "OPERATION_NOT_STARTABLE", $"the other call is refused: {other?.Code}");
         c.Check(c.Facts().Payments == 1 && c.Facts().PaymentsFor(x.Ref) == 1, "exactly 1 payment in the application journal");
+        var starts = File.ReadAllLines(Path.Combine(c.Evidence, "steps.jsonl")).Where(l => l.Contains("\"server_start\"")).ToList();
+        c.Check(starts.Count == 2 && starts.All(l => l.Contains("\"recovered_in_flight_to_unknown\":0")), "neither server start touched the other server's operation (0 recovered each)");
     }
 
     static async Task ConcurrentTwo(Ctx c)
@@ -470,7 +506,7 @@ public static class Program
     static async Task CrashAfterSubmit(Ctx c)
     {
         c.StartApp(131);
-        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT_CRASH_AFTER_SUBMIT"] = "1" });
+        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "crash-after-submit" });
         var target = Plain(c.Facts(), 0);
         var prep = await c.Call(m, "prepare_payment", PrepArgs(target));
         string op = prep.Str("result", "operation_id");
@@ -482,7 +518,7 @@ public static class Program
         c.Check(c.Facts().PaymentsFor(target.Ref) == 1, "the application posted the payment (journal: 1)");
         var m2 = await c.Server();
         var st = await c.Call(m2, "operation_status", A(("operation_id", op)));
-        c.Check(st.Str("result", "state") == "UNKNOWN" && st.Str("result", "reason").Contains("IN_FLIGHT at startup"), $"the restarted server turned IN_FLIGHT into UNKNOWN: {st.Str("result", "reason")}");
+        c.Check(st.Str("result", "state") == "UNKNOWN" && st.Str("result", "reason").Contains("server process ended"), $"the restarted server turned IN_FLIGHT into UNKNOWN: {st.Str("result", "reason")}");
         var again = await c.Call(m2, "prepare_payment", PrepArgs(target));
         c.Check(again.IsError && again.Code == "ACCOUNT_BLOCKED_UNKNOWN", "a new request is refused");
         c.Check(c.Facts().Payments == 1, "exactly 1 payment");
@@ -551,11 +587,13 @@ public static class Program
 
     static async Task SecondServerMidWrite(Ctx c)
     {
-        c.StartApp(231);
+        c.StartApp(232);
         var a = await c.Server();
         var x = Plain(c.Facts(), 0);
         var prep = await c.Call(a, "prepare_payment", PrepArgs(x));
-        c.Check(!prep.IsError, "server A prepared the payment");
+        for (int k = 1; k < 4 && prep.IsError; k++) { c.Note($"{x.Ref} refused ({prep.Code}: {prep.Str("message")}); next row"); x = Plain(c.Facts(), k); prep = await c.Call(a, "prepare_payment", PrepArgs(x)); }
+        c.Check(!prep.IsError, $"server A prepared the payment for {x.Ref}");
+        if (prep.IsError) return;
         string op = prep.Str("result", "operation_id");
         var s = prep.Result.GetProperty("summary");
         string token = c.Approve(op, s.GetProperty("tx_id").GetString()!, s.GetProperty("amount").GetString()!, s.GetProperty("pid").GetInt32());
@@ -573,7 +611,7 @@ public static class Program
         var starts = File.ReadAllLines(Path.Combine(c.Evidence, "steps.jsonl")).Where(l => l.Contains("\"server_start\"")).ToList();
         c.Check(starts.Count == 2 && starts.All(l => l.Contains("\"recovered_in_flight_to_unknown\":0")), $"no server start turned A's live operation into UNKNOWN: {string.Join(" | ", starts.Select(l => l.Contains("\"recovered_in_flight_to_unknown\":0") ? "0" : "recovered"))}");
         var hist = c.Operator($"show --db \"{c.Db}\" --op {op}").Out;
-        c.Check(!hist.Contains("state_unknown") && !hist.Contains("IN_FLIGHT at startup"), "the operation's history holds no UNKNOWN step");
+        c.Check(!hist.Contains("state_unknown") && !hist.Contains("recovered_in_flight"), "the operation's history holds no UNKNOWN step");
         c.Check(c.Facts().Payments == 1, "exactly 1 payment");
     }
 
@@ -616,6 +654,132 @@ public static class Program
         c.Check(prep.Body.ToString().Contains("all 500 rows"), "the decision records that all 500 rows were read before the click");
     }
 
+    static async Task UnexpectedException(Ctx c)
+    {
+        c.StartApp(261);
+        var f = c.Facts();
+        var x = Plain(f, 0); var y = Plain(f, 1, new[] { x.Account });
+        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "throw-before-submit" });
+        var px = await c.Call(m, "prepare_payment", PrepArgs(x));
+        c.Check(!px.IsError, "prepare_payment succeeded");
+        var ex = await ApproveAndExecute(c, m, px);
+        c.Check(ex.IsError && ex.Code == "UNEXPECTED_ERROR" && ex.Str("message").Contains("Win32Exception"), $"a Win32Exception before the Post click: {ex.Code}: {ex.Str("message")}");
+        var sx = await c.Call(m, "operation_status", A(("operation_id", px.Str("result", "operation_id"))));
+        c.Check(sx.Str("result", "stored_state") == "NOT_STARTED", $"stored state {sx.Str("result", "stored_state")}: no write input was sent, so NOT_STARTED, not IN_FLIGHT");
+        c.Check(c.Facts().Payments == 0 && c.Facts().Count("dialog_cancelled") == 1, "no payment; the dialog was cancelled before any Post click");
+        await c.StopServer(m);
+        var m2 = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "throw-after-submit" });
+        var py = await c.Call(m2, "prepare_payment", PrepArgs(y));
+        var ey = await ApproveAndExecute(c, m2, py);
+        string opY = py.Str("result", "operation_id");
+        c.Check(ey.IsError && ey.Code == "UNKNOWN_OUTCOME" && ey.Str("result", "reason").Contains("Win32Exception"), $"a Win32Exception after the Post click: {ey.Code}: {ey.Str("result", "reason")}");
+        var sy = await c.Call(m2, "operation_status", A(("operation_id", opY)));
+        c.Check(sy.Str("result", "stored_state") == "UNKNOWN", $"stored state {sy.Str("result", "stored_state")}: UNKNOWN, recorded while the server is still running");
+        for (int i = 0; i < 40 && c.Facts().PaymentsFor(y.Ref) == 0; i++) Thread.Sleep(250);
+        c.Check(c.Facts().PaymentsFor(y.Ref) == 1, "the application did post that payment (journal: 1)");
+        var (code, _, err) = c.Operator($"reconcile --db \"{c.Db}\" --op {opY} --resolution confirmed --note \"ledger shows the payment\"");
+        c.Check(code == 0, $"a human reconciles it with the operator CLI, the server still running (exit {code} {err.Trim()})");
+    }
+
+    static async Task WrongClick(Ctx c)
+    {
+        c.StartApp(271);
+        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "wrong-click" });
+        var x = Plain(c.Facts(), 1);
+        int before = c.Facts().MouseSelections;
+        var prep = await c.Call(m, "prepare_payment", PrepArgs(x));
+        var f = c.Facts();
+        string? landed = f.LastSelectedTx;
+        var landedRow = f.Rows.FirstOrDefault(r => r.Tx == landed);
+        c.Check(f.MouseSelections == before + 1 && landed != null && landed != x.Tx, $"one real click reached the application, on {landed} ({landedRow?.Ref}), not on the target {x.Tx} ({x.Ref})");
+        c.Check(prep.IsError && prep.Code == "SELECTION_NOT_OBSERVED" && landedRow != null && prep.Str("message").Contains(landedRow.Ref), $"the server read the highlighted row and stopped: {prep.Code}: {prep.Str("message")}");
+        Thread.Sleep(1000);
+        var f2 = c.Facts();
+        c.Check(f2.MouseSelections == before + 1, "no corrective click was sent");
+        var (_, list, _) = c.Operator($"list --db \"{c.Db}\"");
+        c.Check(list.Trim() == "" && f2.Payments == 0 && f2.Count("dialog_opened") == 0, "no operation recorded, no dialog, no payment");
+        c.Frame("wrong-click-caught", $"{x.Ref} / {x.Tx}", $"click landed on {landedRow?.Ref} / {landed}", prep.Code, prep.Str("message"));
+    }
+
+    static async Task AccessDenied(Ctx c)
+    {
+        var app = c.StartApp(281);
+        int? appIl = GridDriver.Native.IntegrityLevel(app.Id, out var why);
+        string level = appIl >= 0x3000 ? "medium" : "low";
+        c.Note($"application pid {app.Id} runs at {GridDriver.Native.LevelName(appIl)} ({why}); the server is started at {level}");
+        if (level == "low")
+        {
+            var ic = Process.Start(new ProcessStartInfo("icacls", $"\"{c.Dir}\" /setintegritylevel (OI)(CI)low") { UseShellExecute = false, RedirectStandardOutput = true })!;
+            ic.WaitForExit();
+            c.Note($"scenario folder labelled low integrity (icacls exit {ic.ExitCode}) so the server can write its database there");
+        }
+        var x = Plain(c.Facts(), 0);
+        var low = await c.Server(integrity: level);
+        int clicks = c.Facts().MouseSelections;
+        var r = await c.Call(low, "inspect_grid", A());
+        c.Check(r.IsError && r.Code == "ACCESS_DENIED", $"inspect_grid: {r.Code}: {r.Str("message")}");
+        var p = await c.Call(low, "prepare_payment", PrepArgs(x));
+        c.Check(p.IsError && p.Code == "ACCESS_DENIED", $"prepare_payment: {p.Code}");
+        var start = File.ReadAllLines(Path.Combine(c.Evidence, "steps.jsonl")).LastOrDefault(l => l.Contains("\"server_start\"")) ?? "";
+        c.Check(start.Contains($"\"integrity\":\"{level}"), $"the server logged its own level: {System.Text.RegularExpressions.Regex.Match(start, "\"integrity\":\"[^\"]*\"").Value}");
+        c.Check(c.Facts().MouseSelections == clicks && c.Facts().Payments == 0, "no input reached the application");
+        c.Frame("elevated-app-refused", $"{x.Ref} (application above the server's integrity level)", "UIPI would drop the input without an error", p.Code, p.Str("message"));
+        await c.StopServer(low);
+        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "msaa-access-denied" });
+        var r2 = await c.Call(m, "inspect_grid", A());
+        c.Check(r2.IsError && r2.Code == "ACCESS_DENIED" && r2.Str("message").Contains("MSAA"), $"MSAA returns E_ACCESSDENIED: {r2.Code}: {r2.Str("message")}");
+        c.Check(!r2.Body.ToString().Contains("inspect-grid") && !r2.Body.ToString().Contains("image: header"), "the diagnostic stopped there: no image or OCR step ran after it");
+    }
+
+    static async Task UiaFailures(Ctx c)
+    {
+        var app = c.StartApp(291, "dialog-other-invoice");
+        var m = await c.Server();
+        var x = Plain(c.Facts(), 0);
+        var px = await c.Call(m, "prepare_payment", PrepArgs(x));
+        c.Check(!px.IsError, "prepare_payment succeeded");
+        var ex = await ApproveAndExecute(c, m, px);
+        c.Check(ex.IsError && ex.Code == "DIALOG_MISMATCH", $"the dialog comes up bound to another invoice; the error thrown inside the UIA call keeps its code: {(ex.Code != "" ? ex.Code : ex.Str("unstructured_error"))}: {ex.Str("message")}");
+        var sx = await c.Call(m, "operation_status", A(("operation_id", px.Str("result", "operation_id"))));
+        c.Check(sx.Str("result", "stored_state") == "NOT_STARTED" && c.Facts().Payments == 0, $"stored state {sx.Str("result", "stored_state")}, no payment");
+        await c.StopServer(m);
+        app.Kill(); app.WaitForExit(5000);
+
+        string data2 = Path.Combine(c.Dir, "app-data-slow");
+        c.StartApp(292, "slow-amount-field", data: data2);
+        var m2 = await c.Server();
+        var y = Plain(AppFacts.Load(data2), 0);
+        var py = await c.Call(m2, "prepare_payment", PrepArgs(y));
+        c.Check(!py.IsError, "prepare_payment succeeded");
+        var ey = await ApproveAndExecute(c, m2, py);
+        c.Check(ey.IsError && ey.Code == "APP_NOT_RESPONDING" && ey.Str("message").Contains("did not return within"), $"the amount field blocks for 6 s, the UIA call is abandoned after 4 s: {ey.Code}: {ey.Str("message")}");
+        Thread.Sleep(8000);
+        var f2 = AppFacts.Load(data2);
+        var fields = f2.Events.Where(e => e.Evt == "dialog_field_changed").Select(e => e.Data.GetProperty("field").GetString()).ToList();
+        c.Check(!fields.Contains("memo") && !fields.Contains("date"), $"no field was written after the time limit (fields written: {string.Join(", ", fields)})");
+        var sy = await c.Call(m2, "operation_status", A(("operation_id", py.Str("result", "operation_id"))));
+        c.Check(sy.Str("result", "stored_state") == "NOT_STARTED" && f2.Payments == 0, $"stored state {sy.Str("result", "stored_state")}, no payment");
+    }
+
+    static Task PixelCheck(Ctx c)
+    {
+        var prof = new GridDriver.GridProfile();
+        using var font = new System.Drawing.Font(prof.FontFamily, prof.FontPx, System.Drawing.GraphicsUnit.Pixel);
+        foreach (var (shown, claimed, accept) in new[] { ("1,000.00", "1,000.00", true), ("1,000.00", "1,200.00", false), ("1,200.00", "1,000.00", false), ("1,200.00", "1,200.00", true), ("4,211.46", "4,211.48", false) })
+        {
+            using var bmp = new System.Drawing.Bitmap(104, prof.RowPx, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+            using (var g = System.Drawing.Graphics.FromImage(bmp))
+            {
+                g.Clear(System.Drawing.Color.White);
+                System.Windows.Forms.TextRenderer.DrawText(g, shown, font, new System.Drawing.Rectangle(prof.CellPadPx, 0, 104 - 2 * prof.CellPadPx, prof.RowPx), System.Drawing.Color.FromArgb(24, 26, 30), System.Drawing.Color.White,
+                    System.Windows.Forms.TextFormatFlags.VerticalCenter | System.Windows.Forms.TextFormatFlags.NoPrefix | System.Windows.Forms.TextFormatFlags.Right);
+            }
+            var refused = GridDriver.Glyphs.Verify(bmp, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), claimed, true, prof, 1.0, out var detail);
+            c.Check((refused == null) == accept, $"cell drawn '{shown}', checked as '{claimed}': {(refused == null ? "accepted" : "refused")} ({detail})");
+        }
+        return Task.CompletedTask;
+    }
+
     static async Task Lookalike(Ctx c)
     {
         c.StartApp(151, "lookalike");
@@ -632,7 +796,7 @@ public static class Program
     static async Task DroppedGroup(Ctx c)
     {
         c.StartApp(161);
-        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT_OCR"] = "1000-as-100" });
+        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT"] = "ocr-1000-as-100" });
         var target = c.Facts().Rows.Single(r => r.AmountCents == 100_000 && r.Type == "Invoice");
         var prep = await c.Call(m, "prepare_payment", PrepArgs(target));
         c.Check(prep.IsError && prep.Code == "AMBIGUOUS", $"reader A '100.00' against reader B '1,000.00': {prep.Code}: {prep.Str("message")}");
