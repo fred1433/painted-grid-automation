@@ -1,7 +1,12 @@
-{"at":"2026-11-17T15:55:54.2022699Z","evt":"created","data":{"seed":141,"flags":[],"rows":41}}
-{"at":"2026-11-17T15:55:54.2099471Z","evt":"started","data":{"pid":1864,"loaded":false,"rows":41}}
-{"at":"2026-11-17T15:55:58.6093498Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T15:56:02.6228603Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T15:56:03.0164701Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
-{"at":"2026-11-17T15:56:03.7774565Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Maple Courier","amount_cents":285807,"date":"2026-03-31","memo":"OP-006625B8"}}
-{"at":"2026-11-17T15:56:06.4350777Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:03:11.3874831Z","evt":"created","data":{"seed":141,"flags":[],"rows":41,"look_alike_pair":["TX-0030","TX-0012"]}}
+{"at":"2026-11-17T17:03:11.3948753Z","evt":"started","data":{"pid":4280,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:03:15.1237104Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:03:17.7085346Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:03:18.0697384Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
+{"at":"2026-11-17T17:03:18.5098484Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
+{"at":"2026-11-17T17:03:18.5119010Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
+{"at":"2026-11-17T17:03:18.5665894Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:03:18.6390375Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-7841408E"}}
+{"at":"2026-11-17T17:03:18.6402386Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-7841408E"}}
+{"at":"2026-11-17T17:03:18.9526759Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Maple Courier","amount_cents":285807,"date":"2026-03-31","memo":"OP-7841408E"}}
+{"at":"2026-11-17T17:03:21.0936898Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}

@@ -1,0 +1,6 @@
+{"at":"2026-11-17T17:05:31.0382296Z","evt":"created","data":{"seed":81,"flags":["dialog-other-invoice"],"rows":41,"look_alike_pair":["TX-0007","TX-0012"]}}
+{"at":"2026-11-17T17:05:31.0447675Z","evt":"started","data":{"pid":6560,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:05:35.0431114Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:05:37.8350205Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:05:38.2071884Z","evt":"dialog_opened","data":{"tx":"TX-0039","invoice_ref":"INV-1039"}}
+{"at":"2026-11-17T17:05:38.5873723Z","evt":"dialog_cancelled","data":{"tx":"TX-0039"}}

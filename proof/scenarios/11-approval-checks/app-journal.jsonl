@@ -1,8 +1,15 @@
-{"at":"2026-11-17T15:53:54.1526025Z","evt":"created","data":{"seed":81,"flags":[],"rows":41}}
-{"at":"2026-11-17T15:53:54.1607397Z","evt":"started","data":{"pid":8104,"loaded":false,"rows":41}}
-{"at":"2026-11-17T15:53:58.4042975Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
-{"at":"2026-11-17T15:54:01.3682656Z","evt":"selection_changed","data":{"tx":"TX-0018","source":"mouse"}}
-{"at":"2026-11-17T15:54:07.4404165Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
-{"at":"2026-11-17T15:54:07.7873275Z","evt":"dialog_opened","data":{"tx":"TX-0039","invoice_ref":"INV-1039"}}
-{"at":"2026-11-17T15:54:08.5467504Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0039","invoice_ref":"INV-1039","account":"Bluefin Logistics","amount_cents":82783,"date":"2026-03-31","memo":"OP-470A2979"}}
-{"at":"2026-11-17T15:54:11.0377637Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:01:18.1411394Z","evt":"created","data":{"seed":81,"flags":[],"rows":41,"look_alike_pair":["TX-0007","TX-0012"]}}
+{"at":"2026-11-17T17:01:18.1476912Z","evt":"started","data":{"pid":5760,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:01:22.1283777Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:01:24.5478780Z","evt":"selection_changed","data":{"tx":"TX-0018","source":"mouse"}}
+{"at":"2026-11-17T17:01:28.5869921Z","evt":"started","data":{"pid":5368,"loaded":true,"rows":41,"stale_view":false,"hidden":0}}
+{"at":"2026-11-17T17:01:31.6216925Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:01:34.3084781Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:01:34.6391011Z","evt":"dialog_opened","data":{"tx":"TX-0039","invoice_ref":"INV-1039"}}
+{"at":"2026-11-17T17:01:35.0666356Z","evt":"dialog_field_changed","data":{"field":"amount","text":"827.83"}}
+{"at":"2026-11-17T17:01:35.0684420Z","evt":"dialog_field_changed","data":{"field":"amount","text":"827.83"}}
+{"at":"2026-11-17T17:01:35.1235723Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:01:35.1961064Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-9999B888"}}
+{"at":"2026-11-17T17:01:35.1973349Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-9999B888"}}
+{"at":"2026-11-17T17:01:35.5081362Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0039","invoice_ref":"INV-1039","account":"Bluefin Logistics","amount_cents":82783,"date":"2026-03-31","memo":"OP-9999B888"}}
+{"at":"2026-11-17T17:01:37.8609478Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}

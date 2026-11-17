@@ -1,12 +1,22 @@
-{"at":"2026-11-17T15:55:12.9508555Z","evt":"created","data":{"seed":121,"flags":["freeze-before-post"],"rows":41}}
-{"at":"2026-11-17T15:55:12.9575934Z","evt":"started","data":{"pid":1260,"loaded":false,"rows":41}}
-{"at":"2026-11-17T15:55:17.3916333Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
-{"at":"2026-11-17T15:55:20.4573320Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
-{"at":"2026-11-17T15:55:20.8185544Z","evt":"dialog_opened","data":{"tx":"TX-0026","invoice_ref":"INV-1026"}}
-{"at":"2026-11-17T15:55:21.5882870Z","evt":"freeze_before_post","data":{"invoice":"INV-1026"}}
-{"at":"2026-11-17T15:55:30.8695212Z","evt":"started","data":{"pid":5324,"loaded":true,"rows":41}}
-{"at":"2026-11-17T15:55:35.4232387Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
-{"at":"2026-11-17T15:55:38.4669586Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
-{"at":"2026-11-17T15:55:38.7972109Z","evt":"dialog_opened","data":{"tx":"TX-0026","invoice_ref":"INV-1026"}}
-{"at":"2026-11-17T15:55:39.6027743Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0026","invoice_ref":"INV-1026","account":"Harbor Paper Co","amount_cents":108038,"date":"2026-03-31","memo":"OP-2C5C5A78"}}
-{"at":"2026-11-17T15:55:42.2270842Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
+{"at":"2026-11-17T17:02:31.5166476Z","evt":"created","data":{"seed":121,"flags":["freeze-before-post"],"rows":41,"look_alike_pair":["TX-0028","TX-0006"]}}
+{"at":"2026-11-17T17:02:31.5245499Z","evt":"started","data":{"pid":9352,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:02:35.4714007Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
+{"at":"2026-11-17T17:02:38.2748206Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
+{"at":"2026-11-17T17:02:38.6179013Z","evt":"dialog_opened","data":{"tx":"TX-0026","invoice_ref":"INV-1026"}}
+{"at":"2026-11-17T17:02:39.0619827Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,080.38"}}
+{"at":"2026-11-17T17:02:39.0642915Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,080.38"}}
+{"at":"2026-11-17T17:02:39.1202270Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:02:39.1935950Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-953AA9B5"}}
+{"at":"2026-11-17T17:02:39.1950462Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-953AA9B5"}}
+{"at":"2026-11-17T17:02:39.5016678Z","evt":"freeze_before_post","data":{"invoice":"INV-1026"}}
+{"at":"2026-11-17T17:02:48.7637657Z","evt":"started","data":{"pid":5340,"loaded":true,"rows":41,"stale_view":false,"hidden":0}}
+{"at":"2026-11-17T17:02:52.8806641Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
+{"at":"2026-11-17T17:02:55.6428830Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}
+{"at":"2026-11-17T17:02:55.9963535Z","evt":"dialog_opened","data":{"tx":"TX-0026","invoice_ref":"INV-1026"}}
+{"at":"2026-11-17T17:02:56.4225589Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,080.38"}}
+{"at":"2026-11-17T17:02:56.4242037Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,080.38"}}
+{"at":"2026-11-17T17:02:56.4801122Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:02:56.5525319Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-953AA9B5"}}
+{"at":"2026-11-17T17:02:56.5537916Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-953AA9B5"}}
+{"at":"2026-11-17T17:02:56.8483533Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0026","invoice_ref":"INV-1026","account":"Harbor Paper Co","amount_cents":108038,"date":"2026-03-31","memo":"OP-953AA9B5"}}
+{"at":"2026-11-17T17:02:59.2230438Z","evt":"selection_changed","data":{"tx":"TX-0026","source":"mouse"}}

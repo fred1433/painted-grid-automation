@@ -1,5 +1,5 @@
 # Rebuilds everything and replays the scenarios on this Windows machine.
-# Needs the .NET 8 SDK. Uses the real desktop: do not touch the mouse or keyboard while it runs (about 15 minutes).
+# Needs the .NET 8 SDK. Uses the real desktop: do not touch the mouse or keyboard while it runs (about 7 minutes of scenarios on the hosted runner, after the build).
 # Usage: ./run-demo.ps1            all scenarios
 #        ./run-demo.ps1 -Only 03,14 scenarios whose name starts with 03 or 14
 param([string]$Only = "")

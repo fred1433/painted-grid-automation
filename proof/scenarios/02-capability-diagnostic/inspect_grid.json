@@ -2,7 +2,7 @@
   "ok": true,
   "result": {
     "window": {
-      "pid": 5320,
+      "pid": 7020,
       "title": "Payables Ledger - Synthetic Co.",
       "exe": "LedgerApp.exe",
       "dpi": 96
@@ -48,7 +48,7 @@
         "surface": "grid",
         "result": "NOT_AVAILABLE",
         "observations": [
-          "8 child windows; grid class WindowsForms10.Window.8.app.0.30495d1_r3_ad1 is not a list or grid class, so no row-level messages apply; WM_GETTEXT is empty",
+          "8 child windows; grid class WindowsForms10.Window.8.app.0.329445b_r3_ad1 is not a list or grid class, so no row-level messages apply; WM_GETTEXT is empty",
           "the grid\u0027s scrollbar is a real child window: GetScrollInfo pos=0 max=40 page=21 (scroll position, not row content)"
         ]
       },
@@ -58,7 +58,7 @@
         "result": "CONFIGURED",
         "observations": [
           "declared by this adapter: Ctrl\u002BP opens the payment dialog for the selected row; F6 toggles the sort; arrow keys move the selection",
-          "keyboard is tried before any pixel click on the painted toolbar"
+          "this adapter never clicks the painted toolbar: the dialog is opened with Ctrl\u002BP"
         ]
       },
       {
@@ -94,7 +94,8 @@
     ],
     "observations": [
       "route lock acquired after 0 ms",
-      "attached to \u0027Payables Ledger - Synthetic Co.\u0027 pid 5320 started 2026-11-17T15:52:25.1567717Z, dpi 96",
+      "pid 7020 integrity high (0x3000), this server high (0x3000)",
+      "attached to \u0027Payables Ledger - Synthetic Co.\u0027 pid 7020 started 2026-11-17T16:59:51.4761211Z, dpi 96",
       "diagnostic: UIA/grid=NOT_AVAILABLE; UIA/toolbar=NOT_AVAILABLE; UIA/search box=AVAILABLE; MSAA/grid=NOT_AVAILABLE; Win32 messages/grid=NOT_AVAILABLE; Keyboard/grid and toolbar=CONFIGURED",
       "header read: Date | Ref # | Account | Type | Amount | Balance | Status",
       "geometry: 7 columns, 21 full rows of 23px, header bottom at 25px, selected row none",
@@ -106,7 +107,7 @@
     "refusal_code": null,
     "refusal_reason": null,
     "captures": [
-      "4932-001-inspect-grid.png"
+      "608-001-inspect-grid.png"
     ]
   }
 }

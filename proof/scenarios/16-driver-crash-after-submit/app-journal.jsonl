@@ -1,6 +1,11 @@
-{"at":"2026-11-17T15:55:43.0846300Z","evt":"created","data":{"seed":131,"flags":[],"rows":41}}
-{"at":"2026-11-17T15:55:43.0921990Z","evt":"started","data":{"pid":4768,"loaded":false,"rows":41}}
-{"at":"2026-11-17T15:55:47.2852239Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
-{"at":"2026-11-17T15:55:50.1683101Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
-{"at":"2026-11-17T15:55:50.5297776Z","evt":"dialog_opened","data":{"tx":"TX-0006","invoice_ref":"INV-1006"}}
-{"at":"2026-11-17T15:55:51.3072994Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0006","invoice_ref":"INV-1006","account":"Granite Facilities","amount_cents":365991,"date":"2026-03-31","memo":"OP-5985561A"}}
+{"at":"2026-11-17T17:03:00.1032315Z","evt":"created","data":{"seed":131,"flags":[],"rows":41,"look_alike_pair":["TX-0002","TX-0030"]}}
+{"at":"2026-11-17T17:03:00.1099603Z","evt":"started","data":{"pid":3412,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:03:04.0362390Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
+{"at":"2026-11-17T17:03:06.8719541Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
+{"at":"2026-11-17T17:03:07.2148754Z","evt":"dialog_opened","data":{"tx":"TX-0006","invoice_ref":"INV-1006"}}
+{"at":"2026-11-17T17:03:07.6415117Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,659.91"}}
+{"at":"2026-11-17T17:03:07.6435863Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,659.91"}}
+{"at":"2026-11-17T17:03:07.6983333Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:03:07.7696187Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-37D81635"}}
+{"at":"2026-11-17T17:03:07.7708445Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-37D81635"}}
+{"at":"2026-11-17T17:03:08.0733324Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0006","invoice_ref":"INV-1006","account":"Granite Facilities","amount_cents":365991,"date":"2026-03-31","memo":"OP-37D81635"}}

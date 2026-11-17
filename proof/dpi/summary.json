@@ -2,14 +2,14 @@
   "runner_image": "win25-vs2026 20261103.298.1",
   "os": "Microsoft Windows 10.0.26100",
   "dotnet": ".NET 8.0.34",
-  "commit": "7248e4363b3d2a3d7ca7df33a707c4cfe27a82a9",
-  "run": "44118974264",
+  "commit": "d1b3aaa253e135e2e866b4793c0f0180577f861f",
+  "run": "44131658109",
   "scenarios": [
     {
       "scenario": "22-dpi-scale",
-      "what": "scaled rendering and DPI-awareness mix between driver and application",
+      "what": "display scaling 1.5 when the job could set it (GetDpiForWindow = 144), else the named fallback",
       "result": "PASS",
-      "seconds": 15.2,
+      "seconds": 21.6,
       "checks": [
         {
           "ok": true,

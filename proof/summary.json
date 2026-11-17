@@ -2,8 +2,8 @@
   "runner_image": "win25-vs2026 20261103.298.1",
   "os": "Microsoft Windows 10.0.26100",
   "dotnet": ".NET 8.0.34",
-  "commit": "7248e4363b3d2a3d7ca7df33a707c4cfe27a82a9",
-  "run": "44118974264",
+  "commit": "d1b3aaa253e135e2e866b4793c0f0180577f861f",
+  "run": "44131658109",
   "scenarios": [
     {
       "scenario": "01-protocol-surface",
@@ -26,6 +26,10 @@
         {
           "ok": true,
           "Text": "inspect_grid is annotated read-only"
+        },
+        {
+          "ok": true,
+          "Text": "find_row is not annotated read-only (it scrolls and may set the search box); prepare_payment is not annotated idempotent (it clicks a row)"
         },
         {
           "ok": true,
@@ -57,7 +61,7 @@
       "scenario": "02-capability-diagnostic",
       "what": "UIA, MSAA and Win32 see no rows; image and OCR do; the search box works through UIA",
       "result": "PASS",
-      "seconds": 4,
+      "seconds": 5,
       "checks": [
         {
           "ok": true,
@@ -109,7 +113,7 @@
       "scenario": "03-correct-write-seed-21",
       "what": "one approved payment, verified selection, confirmed postcondition, then no second write",
       "result": "PASS",
-      "seconds": 15.2,
+      "seconds": 14.5,
       "checks": [
         {
           "ok": true,
@@ -161,7 +165,7 @@
       "scenario": "04-correct-write-seed-22",
       "what": "same with another seed (row order, window position, column widths)",
       "result": "PASS",
-      "seconds": 14.8,
+      "seconds": 13.1,
       "checks": [
         {
           "ok": true,
@@ -213,7 +217,7 @@
       "scenario": "05-correct-write-seed-23",
       "what": "same with a third seed",
       "result": "PASS",
-      "seconds": 14.5,
+      "seconds": 12.4,
       "checks": [
         {
           "ok": true,
@@ -265,7 +269,7 @@
       "scenario": "06-duplicate-rows",
       "what": "two rows with identical Account, Type and Amount: Ref # decides, never the first match",
       "result": "PASS",
-      "seconds": 8.4,
+      "seconds": 11.8,
       "checks": [
         {
           "ok": true,
@@ -277,7 +281,7 @@
         },
         {
           "ok": true,
-          "Text": "prepare_payment without the reference stops with AMBIGUOUS_TARGET: 2 rows match account \u0027Ridge Freight\u0027, amount 1,556.37; they differ only in Date, Ref #, Balance; no click sent"
+          "Text": "prepare_payment without the reference stops with AMBIGUOUS_TARGET: 2 rows match account \u0027Ridge Freight\u0027, amount 1,556.37 (rows 4, 10); they differ only in Date, Ref #, Balance; no click sent"
         },
         {
           "ok": true,
@@ -294,6 +298,14 @@
         {
           "ok": true,
           "Text": "the application\u0027s last selection is TX-0026"
+        },
+        {
+          "ok": true,
+          "Text": "with INV-1005\u0027s account misread in the scan, the request without reference still stops: AMBIGUOUS_TARGET: 1 row matches account \u0027Ridge Freight\u0027, amount 1,556.37 exactly, and 1 more could be the same kind of row misread: row 4 reads \u0027Rdg Freight\u0027 1,556.37; no click sent"
+        },
+        {
+          "ok": true,
+          "Text": "no click for it"
         }
       ]
     },
@@ -301,7 +313,7 @@
       "scenario": "07-target-off-screen",
       "what": "target below the visible rows: real wheel scrolling, then located again",
       "result": "PASS",
-      "seconds": 5.5,
+      "seconds": 4.8,
       "checks": [
         {
           "ok": true,
@@ -329,7 +341,7 @@
       "scenario": "08-sort-between-locate-and-write",
       "what": "the grid is re-sorted after prepare: execute locates again by business identity",
       "result": "PASS",
-      "seconds": 11.9,
+      "seconds": 11.2,
       "checks": [
         {
           "ok": true,
@@ -357,7 +369,7 @@
       "scenario": "09-parasite-window",
       "what": "a topmost window covers the grid: no input, operation back to NOT_STARTED",
       "result": "PASS",
-      "seconds": 7.1,
+      "seconds": 6.4,
       "checks": [
         {
           "ok": true,
@@ -365,7 +377,7 @@
         },
         {
           "ok": true,
-          "Text": "execute_payment stops with WINDOW_BLOCKED: point 493,393 is covered by window \u0027Reminder\u0027 class WindowsForms10.Window.8.app.0.1f550a4_r3_ad1 pid 3216; no input sent"
+          "Text": "execute_payment stops with WINDOW_BLOCKED: point 493,393 is covered by window \u0027Reminder\u0027 class WindowsForms10.Window.8.app.0.1f550a4_r3_ad1 pid 8796; no input sent"
         },
         {
           "ok": true,
@@ -381,11 +393,11 @@
       "scenario": "10-decoy-window",
       "what": "a window with the same title from another executable is rejected",
       "result": "PASS",
-      "seconds": 4.1,
+      "seconds": 4.2,
       "checks": [
         {
           "ok": true,
-          "Text": "attached to the allowlisted process 8068, not to the decoy 3312"
+          "Text": "attached to the allowlisted process 8056, not to the decoy 1224"
         },
         {
           "ok": true,
@@ -403,13 +415,41 @@
     },
     {
       "scenario": "11-approval-checks",
-      "what": "missing, foreign, other row, other amount, other process, expired and reused tokens",
+      "what": "EUR refused; the CLI issues no token for other values; missing, unknown, foreign, expired, previous-process and reused tokens refused",
       "result": "PASS",
-      "seconds": 17.4,
+      "seconds": 20.2,
       "checks": [
         {
           "ok": true,
+          "Text": "a preparation in EUR is refused before anything is read or clicked: CURRENCY_NOT_SUPPORTED"
+        },
+        {
+          "ok": true,
           "Text": "two operations prepared"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve with another row: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-9999B888: row TX-0018 (recorded TX-0039); no token issued)"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve with another amount: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-9999B888: amount 82883 cents (recorded 82783); no token issued)"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve with another currency: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-9999B888: currency EUR (recorded USD); no token issued)"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve with another process: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-9999B888: process 5761 (recorded 5760); no token issued)"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve --ttl-seconds -10: exit 2, no token (--ttl-seconds must be a whole number from 1 to 3600)"
+        },
+        {
+          "ok": true,
+          "Text": "operator approve --ttl-seconds 99999999999: exit 2, no token (--ttl-seconds must be a whole number from 1 to 3600)"
         },
         {
           "ok": true,
@@ -425,27 +465,19 @@
         },
         {
           "ok": true,
-          "Text": "a token issued for another row: APPROVAL_MISMATCH"
-        },
-        {
-          "ok": true,
-          "Text": "a token issued for another amount: APPROVAL_MISMATCH"
-        },
-        {
-          "ok": true,
-          "Text": "a token issued for another process: APPROVAL_MISMATCH"
-        },
-        {
-          "ok": true,
-          "Text": "a token issued in another currency: APPROVAL_MISMATCH"
-        },
-        {
-          "ok": true,
           "Text": "an expired token: APPROVAL_EXPIRED"
         },
         {
           "ok": true,
-          "Text": "after eight refused tokens: no payment, no dialog opened"
+          "Text": "after the application restarts, the same operation is prepared again for process 5368"
+        },
+        {
+          "ok": true,
+          "Text": "a token issued for the previous application process: APPROVAL_MISMATCH"
+        },
+        {
+          "ok": true,
+          "Text": "after the refused tokens: no payment, no dialog opened"
         },
         {
           "ok": true,
@@ -465,7 +497,7 @@
       "scenario": "12-concurrent-same-approval",
       "what": "two servers execute with the same token at once: one write",
       "result": "PASS",
-      "seconds": 13.2,
+      "seconds": 10.7,
       "checks": [
         {
           "ok": true,
@@ -482,6 +514,10 @@
         {
           "ok": true,
           "Text": "exactly 1 payment in the application journal"
+        },
+        {
+          "ok": true,
+          "Text": "neither server start touched the other server\u0027s operation (0 recovered each)"
         }
       ]
     },
@@ -489,7 +525,7 @@
       "scenario": "13-concurrent-two-operations",
       "what": "two operations at once on one server: serialised, both correct",
       "result": "PASS",
-      "seconds": 23.6,
+      "seconds": 18.4,
       "checks": [
         {
           "ok": true,
@@ -517,7 +553,7 @@
       "scenario": "14-freeze-after-post",
       "what": "the app freezes after saving the payment: UNKNOWN, restart, new request refused, one payment",
       "result": "PASS",
-      "seconds": 23.1,
+      "seconds": 22.5,
       "checks": [
         {
           "ok": true,
@@ -565,7 +601,7 @@
       "scenario": "15-freeze-before-post",
       "what": "the app freezes before saving: UNKNOWN too (the cost), human reconciliation, then one payment",
       "result": "PASS",
-      "seconds": 29.8,
+      "seconds": 28.2,
       "checks": [
         {
           "ok": true,
@@ -605,7 +641,7 @@
       "scenario": "16-driver-crash-after-submit",
       "what": "the server dies between the submit input and its check: IN_FLIGHT becomes UNKNOWN at restart",
       "result": "PASS",
-      "seconds": 10.8,
+      "seconds": 10.9,
       "checks": [
         {
           "ok": true,
@@ -617,7 +653,7 @@
         },
         {
           "ok": true,
-          "Text": "the restarted server turned IN_FLIGHT into UNKNOWN: found IN_FLIGHT at startup: the process ended between the write input and its confirmation"
+          "Text": "the restarted server turned IN_FLIGHT into UNKNOWN: found IN_FLIGHT after its server process ended (no process 5176 is running): the outcome of the write input is not known"
         },
         {
           "ok": true,
@@ -631,13 +667,13 @@
     },
     {
       "scenario": "17-intent-journal-failure",
-      "what": "the intent cannot be recorded: no input, approval not consumed",
+      "what": "the operation database is read-only on disk: INTENT_NOT_PERSISTED, no input, approval not consumed",
       "result": "PASS",
-      "seconds": 12.8,
+      "seconds": 10.2,
       "checks": [
         {
           "ok": true,
-          "Text": "execute_payment stops with INTENT_NOT_PERSISTED"
+          "Text": "execute_payment stops with INTENT_NOT_PERSISTED: the intent could not be recorded (SQLite error 8: SQLite Error 8: \u0027attempt to write a readonly database\u0027.); the approval was not consumed and no input was sent"
         },
         {
           "ok": true,
@@ -645,7 +681,11 @@
         },
         {
           "ok": true,
-          "Text": "the approval was not consumed by the failed attempt: the same token works once the journal is writable"
+          "Text": "the operation is still NOT_STARTED (NOT_STARTED)"
+        },
+        {
+          "ok": true,
+          "Text": "the approval was not consumed by the failed attempt: the same token works once the file is writable"
         },
         {
           "ok": true,
@@ -657,7 +697,7 @@
       "scenario": "18-ocr-lookalike-glyphs",
       "what": "an amount drawn with letter O and letter l: refused rather than written",
       "result": "PASS",
-      "seconds": 4.8,
+      "seconds": 4.6,
       "checks": [
         {
           "ok": true,
@@ -677,7 +717,7 @@
       "scenario": "19-ocr-dropped-group",
       "what": "one reader reads 1,000.00 as 100.00 (injected): the readers disagree, refused",
       "result": "PASS",
-      "seconds": 6.4,
+      "seconds": 6.1,
       "checks": [
         {
           "ok": true,
@@ -697,7 +737,7 @@
       "scenario": "20-screen-text-is-data",
       "what": "a cell that says APPROVE PAYMENT grants nothing",
       "result": "PASS",
-      "seconds": 6.5,
+      "seconds": 6.4,
       "checks": [
         {
           "ok": true,
@@ -741,7 +781,7 @@
         },
         {
           "ok": true,
-          "Text": "GridDriver.dll compiled references: Accessibility, UIAutomationClient, UIAutomationTypes, Guard, WinRT.Runtime, Tesseract, WindowsBase"
+          "Text": "GridDriver.dll compiled references: UIAutomationClient, UIAutomationTypes, Accessibility, Guard, WinRT.Runtime, Tesseract, WindowsBase"
         },
         {
           "ok": true,
@@ -750,6 +790,310 @@
         {
           "ok": true,
           "Text": "the server\u0027s output folder contains neither LedgerApp.dll nor Ledger.Verifier.dll"
+        }
+      ]
+    },
+    {
+      "scenario": "23-guard-only-defense",
+      "what": "the payment was saved but the restarted app still shows the invoice Open: only UNKNOWN refuses it, whatever the account spelling",
+      "result": "PASS",
+      "seconds": 21,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "prepare_payment succeeded"
+        },
+        {
+          "ok": true,
+          "Text": "execute_payment returns UNKNOWN: the application stopped answering after the submit input (WM_NULL unanswered within 500 ms); dialog still on screen; read by screen capture only, no UIA call made"
+        },
+        {
+          "ok": true,
+          "Text": "the application saved the payment before freezing (journal: 1)"
+        },
+        {
+          "ok": true,
+          "Text": "on screen after the restart, INV-1022 reads \u0027Open\u0027: the screen alone would allow a second payment"
+        },
+        {
+          "ok": true,
+          "Text": "the same request is refused by the operation store alone: ACCOUNT_BLOCKED_UNKNOWN"
+        },
+        {
+          "ok": true,
+          "Text": "account written \u0027Cedar  Lane Signs\u0027: ACCOUNT_BLOCKED_UNKNOWN"
+        },
+        {
+          "ok": true,
+          "Text": "account written \u0027Cedar-Lane Signs\u0027: ACCOUNT_BLOCKED_UNKNOWN"
+        },
+        {
+          "ok": true,
+          "Text": "account written \u0027CedarLaneSigns\u0027: ACCOUNT_BLOCKED_UNKNOWN"
+        },
+        {
+          "ok": true,
+          "Text": "account written \u0027Cedar Lane Signs.\u0027: ACCOUNT_BLOCKED_UNKNOWN"
+        },
+        {
+          "ok": true,
+          "Text": "the store holds one operation only: OP-E3216A97 UNKNOWN INV-1022 TX-0022 Cedar Lane Signs 79751 2026-03-31"
+        },
+        {
+          "ok": true,
+          "Text": "the application journal still holds exactly 1 payment"
+        }
+      ]
+    },
+    {
+      "scenario": "24-second-server-mid-write",
+      "what": "a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first",
+      "result": "PASS",
+      "seconds": 11,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "server A prepared the payment for INV-1006"
+        },
+        {
+          "ok": true,
+          "Text": "operations.db holds IN_FLIGHT for A\u0027s operation (A is between its intent record and its confirmation)"
+        },
+        {
+          "ok": true,
+          "Text": "A confirms its own operation: CONFIRMED "
+        },
+        {
+          "ok": true,
+          "Text": "B reads CONFIRMED"
+        },
+        {
+          "ok": true,
+          "Text": "no server start turned A\u0027s live operation into UNKNOWN: 0 | 0"
+        },
+        {
+          "ok": true,
+          "Text": "the operation\u0027s history holds no UNKNOWN step"
+        },
+        {
+          "ok": true,
+          "Text": "exactly 1 payment"
+        }
+      ]
+    },
+    {
+      "scenario": "26-slow-save-left-alone",
+      "what": "the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click",
+      "result": "PASS",
+      "seconds": 16.3,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "prepare_payment succeeded"
+        },
+        {
+          "ok": true,
+          "Text": "execute_payment returns UNKNOWN: the dialog was still open 6 s after the Post click (message: \u0027\u0027); it is left as it is: no key or click is sent after Post"
+        },
+        {
+          "ok": true,
+          "Text": "the dialog was not cancelled after the Post click (no Escape sent)"
+        },
+        {
+          "ok": true,
+          "Text": "the slow save completed on its own: exactly 1 payment, dialog never cancelled"
+        },
+        {
+          "ok": true,
+          "Text": "the same payment is refused until a human reconciles: ACCOUNT_BLOCKED_UNKNOWN"
+        }
+      ]
+    },
+    {
+      "scenario": "25-unexpected-exception",
+      "what": "a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN that a human can reconcile; never left IN_FLIGHT",
+      "result": "PASS",
+      "seconds": 15.9,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "prepare_payment succeeded"
+        },
+        {
+          "ok": true,
+          "Text": "a Win32Exception before the Post click: UNEXPECTED_ERROR: StopException: Win32Exception: fault injected (throw-before-submit): screen capture failed just before the Post click; no write input was sent"
+        },
+        {
+          "ok": true,
+          "Text": "stored state NOT_STARTED: no write input was sent, so NOT_STARTED, not IN_FLIGHT"
+        },
+        {
+          "ok": true,
+          "Text": "no payment; the dialog was cancelled before any Post click"
+        },
+        {
+          "ok": true,
+          "Text": "a Win32Exception after the Post click: UNKNOWN_OUTCOME: stopped after the write input (UNEXPECTED_ERROR: Win32Exception: fault injected (throw-after-submit): screen capture failed just after the Post click)"
+        },
+        {
+          "ok": true,
+          "Text": "stored state UNKNOWN: UNKNOWN, recorded while the server is still running"
+        },
+        {
+          "ok": true,
+          "Text": "the application did post that payment (journal: 1)"
+        },
+        {
+          "ok": true,
+          "Text": "a human reconciles it with the operator CLI, the server still running (exit 0 )"
+        }
+      ]
+    },
+    {
+      "scenario": "27-full-coverage-500-rows",
+      "what": "501 rows, look-alike rows near both ends, scan started from the bottom: every row is read before any click",
+      "result": "PASS",
+      "seconds": 33.8,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "501 rows (500 invoices, 1 payment); look-alike pair at rows 5 and 481: INV-1261 Quarry Tools 1,290.22 / INV-1206 Quarry Tools 1,290.22"
+        },
+        {
+          "ok": true,
+          "Text": "without the reference, the look-alike row 481 rows down is found: AMBIGUOUS_TARGET 2 rows match account \u0027Quarry Tools\u0027, amount 1,290.22 (rows 5, 481); they differ only in Date, Ref #, Balance; no click sent"
+        },
+        {
+          "ok": true,
+          "Text": "no click for the ambiguous request"
+        },
+        {
+          "ok": true,
+          "Text": "from the bottom, a row near the top (INV-1430, row 0) is found and selected: TX-0430"
+        },
+        {
+          "ok": true,
+          "Text": "the decision records that all 501 rows (500 invoices and the historical payment) were read before the click"
+        }
+      ]
+    },
+    {
+      "scenario": "28-real-wrong-click",
+      "what": "a real click lands on the neighbouring row: the highlighted row is read, the route stops, no second click, no payment",
+      "result": "PASS",
+      "seconds": 6.8,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "one real click reached the application, on TX-0024 (INV-1024), not on the target TX-0010 (INV-1010)"
+        },
+        {
+          "ok": true,
+          "Text": "the server read the highlighted row and stopped: SELECTION_NOT_OBSERVED: after the click the highlight is on view row 16, which reads INV-1024 \u0027Alder Office\u0027 2,776.07; the target is view row 15 (ref INV-1010, account \u0027Harbor Paper Co\u0027, amount 3,513.79); stopped, no second click is sent"
+        },
+        {
+          "ok": true,
+          "Text": "no corrective click was sent"
+        },
+        {
+          "ok": true,
+          "Text": "no operation recorded, no dialog, no payment"
+        }
+      ]
+    },
+    {
+      "scenario": "29-access-denied",
+      "what": "the application runs above the server\u0027s integrity level, and MSAA answers E_ACCESSDENIED: ACCESS_DENIED, no fallback, no input",
+      "result": "PASS",
+      "seconds": 3.2,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "inspect_grid: ACCESS_DENIED: pid 1332 runs at integrity high (0x3000), this server at medium (0x2000): Windows drops input and messages sent to a higher level (UIPI) without an error; no input sent"
+        },
+        {
+          "ok": true,
+          "Text": "prepare_payment: ACCESS_DENIED"
+        },
+        {
+          "ok": true,
+          "Text": "the server logged its own level: \u0022integrity\u0022:\u0022medium (0x2000)\u0022"
+        },
+        {
+          "ok": true,
+          "Text": "no input reached the application"
+        },
+        {
+          "ok": true,
+          "Text": "MSAA returns E_ACCESSDENIED: ACCESS_DENIED: MSAA: AccessibleObjectFromWindow returned E_ACCESSDENIED (0x80070005); the diagnostic stops here, with no image or OCR fallback"
+        },
+        {
+          "ok": true,
+          "Text": "the diagnostic stopped there: no image or OCR step ran after it"
+        }
+      ]
+    },
+    {
+      "scenario": "30-uia-failures",
+      "what": "an error inside a UIA call keeps its code; a UIA call past its time limit writes no further field",
+      "result": "PASS",
+      "seconds": 28.3,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "prepare_payment succeeded"
+        },
+        {
+          "ok": true,
+          "Text": "the dialog comes up bound to another invoice; the error thrown inside the UIA call keeps its code: DIALOG_MISMATCH: dialog is bound to \u0027INV-1040  Bluefin Logistics\u0027, expected INV-1039"
+        },
+        {
+          "ok": true,
+          "Text": "stored state NOT_STARTED, no payment"
+        },
+        {
+          "ok": true,
+          "Text": "prepare_payment succeeded"
+        },
+        {
+          "ok": true,
+          "Text": "the amount field blocks for 6 s, the UIA call is abandoned after 4 s: APP_NOT_RESPONDING: UIA call \u0027fill payment dialog\u0027 did not return within 4000 ms; it is abandoned (a COM call already sent may still complete), it writes no further field, and no other UIA call starts until it returns"
+        },
+        {
+          "ok": true,
+          "Text": "no field was written after the time limit (fields written: amount, amount)"
+        },
+        {
+          "ok": true,
+          "Text": "stored state NOT_STARTED, no payment"
+        }
+      ]
+    },
+    {
+      "scenario": "31-pixel-check-strict",
+      "what": "1,000.00 drawn, 1,200.00 claimed (and the reverse): refused; the same value: accepted",
+      "result": "PASS",
+      "seconds": 0,
+      "checks": [
+        {
+          "ok": true,
+          "Text": "cell drawn \u00271,000.00\u0027, checked as \u00271,000.00\u0027: accepted (0 of 160 ink pixels differ)"
+        },
+        {
+          "ok": true,
+          "Text": "cell drawn \u00271,000.00\u0027, checked as \u00271,200.00\u0027: refused (23 of 168 ink pixels differ)"
+        },
+        {
+          "ok": true,
+          "Text": "cell drawn \u00271,200.00\u0027, checked as \u00271,000.00\u0027: refused (23 of 168 ink pixels differ)"
+        },
+        {
+          "ok": true,
+          "Text": "cell drawn \u00271,200.00\u0027, checked as \u00271,200.00\u0027: accepted (0 of 153 ink pixels differ)"
+        },
+        {
+          "ok": true,
+          "Text": "cell drawn \u00274,211.46\u0027, checked as \u00274,211.48\u0027: refused (15 of 156 ink pixels differ)"
         }
       ]
     }
