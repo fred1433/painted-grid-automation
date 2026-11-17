@@ -145,7 +145,7 @@ public sealed class Ctx : IAsyncDisposable
         var rows = new List<(string Key, string Text)>();
         foreach (var (k, v) in new[] { ("requested", requested), ("observed", observed), ("state", state), ("reason", reason) })
         {
-            var lines = Wrap(v, width).Take(k is "reason" or "observed" ? 3 : 1).ToList();
+            var lines = Wrap(v, width).Take(k == "reason" ? 5 : k == "observed" ? 2 : 1).ToList();
             for (int i = 0; i < lines.Count; i++) rows.Add((i == 0 ? k : "", lines[i]));
         }
         int band = 56 + rows.Count * line + 14;

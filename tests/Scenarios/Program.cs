@@ -73,7 +73,7 @@ public static class Program
         ("24-second-server-mid-write", "a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first", SecondServerMidWrite),
         ("26-slow-save-left-alone", "the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click", SlowSave),
         ("25-unexpected-exception", "a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN that a human can reconcile; never left IN_FLIGHT", UnexpectedException),
-        ("27-full-coverage-500-rows", "500 rows, look-alike rows at both ends, scan started from the bottom: every row is read before any click", FullCoverage),
+        ("27-full-coverage-500-rows", "501 rows, look-alike rows near both ends, scan started from the bottom: every row is read before any click", FullCoverage),
         ("28-real-wrong-click", "a real click lands on the neighbouring row: the highlighted row is read, the route stops, no second click, no payment", WrongClick),
         ("29-access-denied", "the application runs above the server's integrity level, and MSAA answers E_ACCESSDENIED: ACCESS_DENIED, no fallback, no input", AccessDenied),
         ("30-uia-failures", "an error inside a UIA call keeps its code; a UIA call past its time limit writes no further field", UiaFailures),
@@ -640,7 +640,7 @@ public static class Program
         var byDate = f.ByDate;
         var pair = Duplicates(f);
         int far = pair.Count == 2 ? byDate.FindIndex(r => r.Tx == pair[1].Tx) : -1;
-        c.Check(pair.Count == 2 && far >= 470, $"500 rows; look-alike pair at rows {(pair.Count == 2 ? byDate.FindIndex(r => r.Tx == pair[0].Tx) : -1)} and {far}: {string.Join(" / ", pair.Select(r => $"{r.Ref} {r.Account} {Money(r.AmountCents)}"))}");
+        c.Check(pair.Count == 2 && far >= 470, $"{f.Rows.Count} rows (500 invoices, 1 payment); look-alike pair at rows {(pair.Count == 2 ? byDate.FindIndex(r => r.Tx == pair[0].Tx) : -1)} and {far}: {string.Join(" / ", pair.Select(r => $"{r.Ref} {r.Account} {Money(r.AmountCents)}"))}");
         if (pair.Count != 2) return;
         int clicks = c.Facts().MouseSelections;
         var noRef = await c.Call(m, "prepare_payment", PrepArgs(pair[0], withRef: false));
@@ -651,7 +651,8 @@ public static class Program
         var top = byDate.Take(12).First(r => r.Type == "Invoice" && r.Status == "Open" && r.AmountCents != 100_000 && r.AmountCents != 120_000 && pair.All(p => p.Account != r.Account || p.AmountCents != r.AmountCents));
         var prep = await c.Call(m, "prepare_payment", PrepArgs(top));
         c.Check(!prep.IsError && prep.Str("result", "summary", "tx_id") == top.Tx, $"from the bottom, a row near the top ({top.Ref}, row {byDate.IndexOf(top)}) is found and selected: {(prep.IsError ? prep.Code + " " + prep.Str("message") : prep.Str("result", "summary", "tx_id"))}");
-        c.Check(prep.Body.ToString().Contains("all 500 rows"), "the decision records that all 500 rows were read before the click");
+        int total = c.Facts().Rows.Count;
+        c.Check(prep.Body.ToString().Contains($"all {total} rows read"), $"the decision records that all {total} rows (500 invoices and the historical payment) were read before the click");
     }
 
     static async Task UnexpectedException(Ctx c)
@@ -731,11 +732,28 @@ public static class Program
         c.Check(!r2.Body.ToString().Contains("inspect-grid") && !r2.Body.ToString().Contains("image: header"), "the diagnostic stopped there: no image or OCR step ran after it");
     }
 
+    /// <summary>Starts the application with the first seed that has a row Plain() accepts; the seeds tried are logged.</summary>
+    static (Process App, LedgerRow Row) StartWithPlainRow(Ctx c, int[] seeds, string flags, string? data)
+    {
+        foreach (var seed in seeds)
+        {
+            var app = c.StartApp(seed, flags, data: data);
+            var f = data == null ? c.Facts() : AppFacts.Load(data);
+            try { return (app, Plain(f, 0)); }
+            catch (InvalidOperationException)
+            {
+                c.Note($"seed {seed}: no row with an account of its own; next seed");
+                app.Kill(); app.WaitForExit(5000);
+                foreach (var file in new[] { "ledger.json", "journal.jsonl" }) File.Delete(Path.Combine(data ?? c.Data, file));
+            }
+        }
+        throw new InvalidOperationException("no seed gave a row with an account of its own");
+    }
+
     static async Task UiaFailures(Ctx c)
     {
-        var app = c.StartApp(291, "dialog-other-invoice");
+        var (app, x) = StartWithPlainRow(c, new[] { 81, 261, 271, 21 }, "dialog-other-invoice", null);
         var m = await c.Server();
-        var x = Plain(c.Facts(), 0);
         var px = await c.Call(m, "prepare_payment", PrepArgs(x));
         c.Check(!px.IsError, "prepare_payment succeeded");
         var ex = await ApproveAndExecute(c, m, px);
@@ -746,9 +764,8 @@ public static class Program
         app.Kill(); app.WaitForExit(5000);
 
         string data2 = Path.Combine(c.Dir, "app-data-slow");
-        c.StartApp(292, "slow-amount-field", data: data2);
+        var (_, y) = StartWithPlainRow(c, new[] { 261, 271, 81, 22 }, "slow-amount-field", data2);
         var m2 = await c.Server();
-        var y = Plain(AppFacts.Load(data2), 0);
         var py = await c.Call(m2, "prepare_payment", PrepArgs(y));
         c.Check(!py.IsError, "prepare_payment succeeded");
         var ey = await ApproveAndExecute(c, m2, py);

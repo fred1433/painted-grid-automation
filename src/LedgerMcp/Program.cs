@@ -11,7 +11,7 @@ namespace LedgerMcp;
 
 public static class Program
 {
-    public static async Task Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         Native.MakeProcessPerMonitorAware();
         string Arg(string name, string? env, string def)
@@ -27,6 +27,12 @@ public static class Program
             TessdataDir = Arg("--tessdata", "PGA_TESSDATA", "tessdata"),
         };
         string db = Arg("--db", "PGA_DB", Path.Combine("state", "operations.db"));
+        if (cfg.AllowedExe == "" || !File.Exists(cfg.AllowedExe))
+        {
+            Console.Error.WriteLine($"ledger-mcp: --allow-exe must name the application's executable ({(cfg.AllowedExe == "" ? "missing" : "not found: " + cfg.AllowedExe)})\n" +
+                "usage: ledger-mcp --allow-exe PATH\\LedgerApp.exe [--db state\\operations.db] [--evidence evidence] [--tessdata tessdata]");
+            return 2;
+        }
 
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { Args = Array.Empty<string>(), ContentRootPath = AppContext.BaseDirectory });
         builder.Logging.ClearProviders();
@@ -37,5 +43,6 @@ public static class Program
             .WithStdioServerTransport()
             .WithTools<LedgerTools>();
         await builder.Build().RunAsync();
+        return 0;
     }
 }
