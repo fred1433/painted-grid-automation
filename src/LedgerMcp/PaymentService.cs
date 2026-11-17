@@ -28,7 +28,7 @@ public sealed class PaymentService : IDisposable
         try { n = RouteLock.Run(RouteLock.LedgerRoute, TimeSpan.Zero, () => _store.RecoverInFlight()); recovery = "done"; }
         catch (Refusal r) when (r.Code == "ROUTE_BUSY") { recovery = "deferred: another call holds the route lock"; }
         int? il = Native.IntegrityLevel(Environment.ProcessId, out _);
-        _ev.Log("server_start", new { pid = Environment.ProcessId, db = Path.GetFileName(db), recovered_in_flight_to_unknown = n, recovery, integrity = Native.LevelName(il), allow_exe = Path.GetFileName(cfg.AllowedExe), faults = Faults.Names });
+        _ev.Log("server_start", new { pid = Environment.ProcessId, db = _store.DbPath, recovered_in_flight_to_unknown = n, recovery, integrity = Native.LevelName(il), allow_exe = Path.GetFileName(cfg.AllowedExe), faults = Faults.Names });
         _driver = new Lazy<LedgerDriver>(() => new LedgerDriver(cfg, _ev));
     }
 
@@ -67,7 +67,8 @@ public sealed class PaymentService : IDisposable
         {
             var ex = Unwrap(raw);
             string code = CodeOf(ex);
-            return Fail(tool, code, code == Codes.UnexpectedError ? $"{ex.GetType().Name}: {ex.Message}" : ex.Message, d, sw);
+            // A StopException or Refusal already carries its own message; only a raw exception is prefixed with its type.
+            return Fail(tool, code, ex is StopException or Refusal ? ex.Message : $"{ex.GetType().Name}: {ex.Message}", d, sw);
         }
     }
 
@@ -161,8 +162,11 @@ public sealed class PaymentService : IDisposable
         }
         catch (Exception raw)
         {
-            // Any failure, expected or not, ends in a recorded state: NOT_STARTED if no write input can have been sent,
-            // UNKNOWN otherwise. Never left IN_FLIGHT by a server that is still running.
+            // Any failure, expected or not, is recorded when the database accepts the write: NOT_STARTED if no write input can
+            // have been sent, UNKNOWN otherwise. If the database refuses that write too (read-only file, full disk), the operation
+            // stays IN_FLIGHT under this server: the call reports UNKNOWN, the operation blocks its account, invoice and row, and
+            // `ledger-operator reconcile` answers OWNER_ALIVE as long as this server runs, because no outcome will come.
+            // The human stops this server, then reconciles (or the next server start turns it into UNKNOWN).
             var ex = Unwrap(raw);
             string code = CodeOf(ex);
             string what = $"{code}: {(ex is StopException or Refusal ? "" : ex.GetType().Name + ": ")}{ex.Message}";
@@ -183,8 +187,11 @@ public sealed class PaymentService : IDisposable
         var final = _store.Get(op.OpId);
         if (!recorded) d.Obs($"the operation was no longer IN_FLIGHT under this server when its outcome came back; it reads {final.State}");
         var body = new { operation_id = final.OpId, state = final.State == States.InFlight ? States.Unknown : final.State, reason = recorded ? final.Reason : outcome.Reason, payment_tx = outcome.PaymentTx, tx_id = final.TxId };
+        string message = final.State == States.InFlight
+            ? $"do not retry: the outcome of the write is not known, and the database refused to record it, so the operation stays IN_FLIGHT, blocking, until this server (pid {Environment.ProcessId}) stops; a human stops this server, then reconciles it with the operator CLI"
+            : "do not retry: the outcome of the write is not known; a human must reconcile it with the operator CLI";
         if (final.State != States.Confirmed)
-            return new Refused(new Dictionary<string, object?> { ["ok"] = false, ["code"] = "UNKNOWN_OUTCOME", ["message"] = "do not retry: the outcome of the write is not known; a human must reconcile it with the operator CLI", ["result"] = body, ["decision"] = d });
+            return new Refused(new Dictionary<string, object?> { ["ok"] = false, ["code"] = "UNKNOWN_OUTCOME", ["message"] = message, ["result"] = body, ["decision"] = d });
         return body;
     });
 

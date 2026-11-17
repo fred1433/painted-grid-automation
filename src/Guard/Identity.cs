@@ -10,8 +10,10 @@ namespace Guard;
 public static class Identity
 {
     /// <summary>
-    /// Loose folding of free text (an account name read on screen or typed by a caller): accents, case, spaces and
-    /// punctuation are dropped, and the letters OCR confuses with digits (O, I, L, S) become 0, 1, 1, 5.
+    /// Loose folding of free text (an account name read on screen or typed by a caller): compatibility forms are decomposed
+    /// (the ligature U+FB01 becomes fi), combining accents are dropped (é, ü, ó), the Latin letters that do not decompose are
+    /// spelled out (ø o, ß ss, ł l, æ ae, œ oe, đ and ð d, þ th, dotless ı i), case, spaces and punctuation are dropped, and
+    /// the letters OCR confuses with digits (O, I, L, S) become 0, 1, 1, 5. Letters of other scripts are kept as they are.
     /// Used for two things only: shortlisting rows during a scan, and the account key that blocks a retry, so that two
     /// spellings that fold the same are the same account. It never accepts a value on its own: a value is accepted when
     /// both OCR readers agree on the exact string (and, for Ref #, Date and Amount, when the pixels match it re-drawn).
@@ -19,9 +21,16 @@ public static class Identity
     public static string Fold(string? s)
     {
         var sb = new StringBuilder();
-        foreach (char ch in (s ?? "").Normalize(NormalizationForm.FormD))
+        foreach (char ch in (s ?? "").Normalize(NormalizationForm.FormKD))
         {
             if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark) continue;
+            string? spelled = ch switch
+            {
+                '\u00F8' or '\u00D8' => "O", '\u00DF' or '\u1E9E' => "SS", '\u0142' or '\u0141' => "L", '\u00E6' or '\u00C6' => "AE",
+                '\u0153' or '\u0152' => "OE", '\u0111' or '\u0110' or '\u00F0' or '\u00D0' => "D", '\u00FE' or '\u00DE' => "TH", '\u0131' => "I",
+                _ => null,
+            };
+            if (spelled != null) { sb.Append(spelled); continue; }
             char u = char.ToUpperInvariant(ch);
             if (char.IsLetterOrDigit(u)) sb.Append(u);
         }

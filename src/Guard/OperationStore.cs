@@ -42,52 +42,43 @@ public sealed class OperationStore
 {
     readonly string _cs;
     readonly ProcessOwner _me;
-    public string Path { get; }
+    /// <summary>Full path of the database file.</summary>
+    public string DbPath { get; }
     public const int MaxApprovalSeconds = 3600;
 
     const string Columns = "op_id,business_key,account,account_key,invoice_ref,tx_id,amount_cents,currency,pay_date,pid,process_start,state,reason,write_input_sent,owner_pid,owner_start,created_at,updated_at";
 
+    /// <summary>Opens the database, creating the file and its tables if they do not exist (the server does this on start).</summary>
     /// <param name="owner">The process recorded as owner of the operations this instance reserves (the current process unless a test says otherwise).</param>
-    public OperationStore(string dbPath, ProcessOwner? owner = null)
+    public OperationStore(string dbPath, ProcessOwner? owner = null) : this(dbPath, owner, create: true) { }
+
+    /// <summary>Opens a database that already exists and holds the operation tables; never creates a file (the operator CLI).</summary>
+    public static OperationStore OpenExisting(string dbPath) => new(dbPath, null, create: false);
+
+    OperationStore(string dbPath, ProcessOwner? owner, bool create)
     {
         _me = owner ?? ProcessOwner.Current;
-        Path = System.IO.Path.GetFullPath(dbPath);
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-        _cs = new SqliteConnectionStringBuilder { DataSource = Path, Pooling = false, DefaultTimeout = 30 }.ToString();
+        DbPath = Path.GetFullPath(dbPath);
+        if (create) Directory.CreateDirectory(Path.GetDirectoryName(DbPath)!);
+        else if (!File.Exists(DbPath)) throw new Refusal("DATABASE_NOT_FOUND", $"no operation database at {DbPath}");
+        _cs = new SqliteConnectionStringBuilder { DataSource = DbPath, Mode = create ? SqliteOpenMode.ReadWriteCreate : SqliteOpenMode.ReadWrite, Pooling = false, DefaultTimeout = 30 }.ToString();
         using var c = Open();
+        if (!create)
+        {
+            using var cmd = c.CreateCommand();
+            cmd.CommandText = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('operations','approvals','events')";
+            if (Convert.ToInt32(cmd.ExecuteScalar()) != 3) throw new Refusal("NOT_AN_OPERATION_DATABASE", $"{DbPath} exists but does not hold the operation tables");
+            return;
+        }
         Exec(c, null, @"
 CREATE TABLE IF NOT EXISTS operations(
-  op_id TEXT PRIMARY KEY, business_key TEXT NOT NULL, account TEXT NOT NULL, invoice_ref TEXT NOT NULL, tx_id TEXT NOT NULL,
+  op_id TEXT PRIMARY KEY, business_key TEXT NOT NULL, account TEXT NOT NULL, account_key TEXT NOT NULL, invoice_ref TEXT NOT NULL, tx_id TEXT NOT NULL,
   amount_cents INTEGER NOT NULL, currency TEXT NOT NULL, pay_date TEXT NOT NULL, pid INTEGER NOT NULL, process_start TEXT NOT NULL,
-  state TEXT NOT NULL, reason TEXT, write_input_sent INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-  account_key TEXT, owner_pid INTEGER, owner_start TEXT);
+  state TEXT NOT NULL, reason TEXT, write_input_sent INTEGER NOT NULL DEFAULT 0, owner_pid INTEGER, owner_start TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS approvals(
   token_hash TEXT PRIMARY KEY, op_id TEXT NOT NULL, tx_id TEXT NOT NULL, amount_cents INTEGER NOT NULL, currency TEXT NOT NULL,
   pid INTEGER NOT NULL, issued_at TEXT NOT NULL, expires_at TEXT NOT NULL, used_at TEXT, used_note TEXT);
 CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, op_id TEXT, kind TEXT NOT NULL, detail TEXT);");
-        Migrate(c);
-    }
-
-    /// <summary>Databases written by the first version lack the account key and the owner; the key is computed here, in C#.</summary>
-    static void Migrate(SqliteConnection c)
-    {
-        var cols = new HashSet<string>();
-        using (var cmd = c.CreateCommand())
-        {
-            cmd.CommandText = "PRAGMA table_info(operations)";
-            using var r = cmd.ExecuteReader();
-            while (r.Read()) cols.Add(r.GetString(1));
-        }
-        foreach (var (col, type) in new[] { ("account_key", "TEXT"), ("owner_pid", "INTEGER"), ("owner_start", "TEXT") })
-            if (!cols.Contains(col)) Exec(c, null, $"ALTER TABLE operations ADD COLUMN {col} {type}");
-        var missing = new List<(string Id, string Account)>();
-        using (var cmd = c.CreateCommand())
-        {
-            cmd.CommandText = "SELECT op_id, account FROM operations WHERE account_key IS NULL";
-            using var r = cmd.ExecuteReader();
-            while (r.Read()) missing.Add((r.GetString(0), r.GetString(1)));
-        }
-        foreach (var (id, acc) in missing) Exec(c, null, "UPDATE operations SET account_key=$k WHERE op_id=$id", ("$k", Identity.Fold(acc)), ("$id", id));
     }
 
     SqliteConnection Open()
@@ -119,7 +110,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         using var r = cmd.ExecuteReader();
         var l = new List<Operation>();
         while (r.Read())
-            l.Add(new Operation(r.GetString(0), r.GetString(1), r.GetString(2), r.IsDBNull(3) ? Identity.Fold(r.GetString(2)) : r.GetString(3), r.GetString(4), r.GetString(5),
+            l.Add(new Operation(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4), r.GetString(5),
                 r.GetInt64(6), r.GetString(7), r.GetString(8), r.GetInt32(9), r.GetString(10), r.GetString(11), r.IsDBNull(12) ? null : r.GetString(12), r.GetInt64(13) != 0,
                 r.IsDBNull(14) ? null : r.GetInt32(14), r.IsDBNull(15) ? null : r.GetString(15), r.GetString(16), r.GetString(17)));
         return l;
@@ -130,7 +121,29 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
     static void Event(SqliteConnection c, SqliteTransaction? t, string? op, string kind, string detail) =>
         Exec(c, t, "INSERT INTO events(at,op_id,kind,detail) VALUES($a,$o,$k,$d)", ("$a", Now()), ("$o", op), ("$k", kind), ("$d", detail));
 
-    public void Event(string? op, string kind, string detail) { using var c = Open(); Event(c, null, op, kind, detail); }
+    const string RevokedPrefix = "revoked: ";
+
+    /// <summary>
+    /// Revokes the unused approvals of the operations matched by <paramref name="opsWhere"/>: an approval is valid only for
+    /// the state in which it was issued. Records one event per operation whose approvals were revoked.
+    /// </summary>
+    static void Revoke(SqliteConnection c, SqliteTransaction t, string why, string opsWhere, params (string, object?)[] p)
+    {
+        var ids = new List<string>();
+        using (var cmd = c.CreateCommand())
+        {
+            cmd.Transaction = t;
+            cmd.CommandText = $"SELECT DISTINCT op_id FROM approvals WHERE used_at IS NULL AND op_id IN (SELECT op_id FROM operations WHERE {opsWhere})";
+            foreach (var (n, v) in p) cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) ids.Add(r.GetString(0));
+        }
+        foreach (var id in ids)
+        {
+            int k = Exec(c, t, "UPDATE approvals SET used_at=$n, used_note=$w WHERE op_id=$id AND used_at IS NULL", ("$n", Now()), ("$w", RevokedPrefix + why), ("$id", id));
+            Event(c, t, id, "approvals_revoked", $"{k} unused approval(s) revoked: {why}");
+        }
+    }
 
     /// <summary>
     /// Turns into UNKNOWN every IN_FLIGHT whose owner process has ended. An IN_FLIGHT whose owner is alive is left alone:
@@ -142,7 +155,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         int n = 0;
         foreach (var op in ReadOps(c, null, "state='IN_FLIGHT'"))
         {
-            string why = "no owner recorded (written by an earlier version)";
+            string why = "no owner recorded";
             if (op.Owner is { } o && o.IsAlive(out why)) continue;
             using var t = c.BeginTransaction();
             int k = Exec(c, t, "UPDATE operations SET state='UNKNOWN', reason=$r, updated_at=$n WHERE op_id=$id AND state='IN_FLIGHT' AND owner_pid IS $p AND owner_start IS $s",
@@ -238,6 +251,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         if (Blocking(c, t, op.AccountKey, op.InvoiceRef, op.TxId, op.OpId) is { } b) throw Blocked(b);
         if (ReadOp(c, t, "tx_id=$t AND state='CONFIRMED'", ("$t", op.TxId)) is { } done) throw new Refusal("ALREADY_CONFIRMED", $"operation {done.OpId} already paid {done.TxId}");
         string token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        Revoke(c, t, "a newer approval was issued for this operation", "op_id=$id", ("$id", opId));
         var now = DateTimeOffset.UtcNow;
         Exec(c, t, "INSERT INTO approvals VALUES($h,$op,$tx,$amt,$cur,$pid,$i,$e,NULL,NULL)",
             ("$h", Hash(token)), ("$op", opId), ("$tx", txId), ("$amt", cents), ("$cur", currency), ("$pid", pid), ("$i", now.ToString("O")), ("$e", now.Add(ttl).ToString("O")));
@@ -267,16 +281,18 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         var op = ReadOp(c, t, "op_id=$id", ("$id", opId)) ?? throw new Refusal("OPERATION_NOT_FOUND", $"no operation {opId}");
         if (string.IsNullOrWhiteSpace(token)) throw new Refusal("APPROVAL_REQUIRED", "write tools need a single-use human approval token");
         string h = Hash(token);
-        string? aOp = null, aTx = null, aCur = null, used = null, exp = null; long aAmt = 0; int aPid = 0;
+        string? aOp = null, aTx = null, aCur = null, used = null, usedNote = null, exp = null; long aAmt = 0; int aPid = 0;
         using (var cmd = c.CreateCommand())
         {
             cmd.Transaction = t;
-            cmd.CommandText = "SELECT op_id,tx_id,amount_cents,currency,pid,expires_at,used_at FROM approvals WHERE token_hash=$h";
+            cmd.CommandText = "SELECT op_id,tx_id,amount_cents,currency,pid,expires_at,used_at,used_note FROM approvals WHERE token_hash=$h";
             cmd.Parameters.AddWithValue("$h", h);
             using var r = cmd.ExecuteReader();
             if (!r.Read()) throw new Refusal("APPROVAL_UNKNOWN", "this token was never issued");
-            aOp = r.GetString(0); aTx = r.GetString(1); aAmt = r.GetInt64(2); aCur = r.GetString(3); aPid = r.GetInt32(4); exp = r.GetString(5); used = r.IsDBNull(6) ? null : r.GetString(6);
+            aOp = r.GetString(0); aTx = r.GetString(1); aAmt = r.GetInt64(2); aCur = r.GetString(3); aPid = r.GetInt32(4); exp = r.GetString(5); used = r.IsDBNull(6) ? null : r.GetString(6); usedNote = r.IsDBNull(7) ? null : r.GetString(7);
         }
+        if (used != null && usedNote != null && usedNote.StartsWith(RevokedPrefix, StringComparison.Ordinal))
+            throw new Refusal("APPROVAL_REVOKED", $"token revoked at {used} ({usedNote[RevokedPrefix.Length..]}); a human approves again with the operator CLI");
         if (used != null) throw new Refusal("APPROVAL_ALREADY_USED", $"token already consumed at {used}");
         if (DateTimeOffset.Parse(exp!) < DateTimeOffset.UtcNow) throw new Refusal("APPROVAL_EXPIRED", $"token expired at {exp}");
         if (aOp != op.OpId) throw new Refusal("APPROVAL_MISMATCH", $"token was issued for operation {aOp}, not {op.OpId}");
@@ -289,7 +305,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         if (ReadOp(c, t, "tx_id=$t AND state='CONFIRMED'", ("$t", op.TxId)) is { } done) throw new Refusal("ALREADY_CONFIRMED", $"operation {done.OpId} already paid {done.TxId}");
         string now = Now();
         if (Exec(c, t, "UPDATE approvals SET used_at=$n, used_note=$note WHERE token_hash=$h AND used_at IS NULL", ("$n", now), ("$note", note), ("$h", h)) != 1)
-            throw new Refusal("APPROVAL_ALREADY_USED", "token consumed by another caller");
+            throw new Refusal("APPROVAL_ALREADY_USED", "token consumed or revoked by another caller");
         if (Exec(c, t, "UPDATE operations SET state='IN_FLIGHT', reason='intent recorded before the write input', write_input_sent=0, owner_pid=$op, owner_start=$os, updated_at=$n WHERE op_id=$id AND state='NOT_STARTED'",
                 ("$op", _me.Pid), ("$os", _me.Start), ("$n", now), ("$id", op.OpId)) != 1)
             throw new Refusal("OPERATION_NOT_STARTABLE", "operation changed state during the reservation");
@@ -333,7 +349,9 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
 
     /// <summary>
     /// Human reconciliation (operator CLI): an UNKNOWN operation, or an IN_FLIGHT one whose owner process has ended.
-    /// An IN_FLIGHT whose owner is running is refused: that server has not finished.
+    /// An IN_FLIGHT whose owner is running is refused: either that server has not finished, or its call has returned but the
+    /// database refused to record the outcome, and then nothing more will come until that server is stopped.
+    /// Every unused approval on the same account, invoice or row is revoked: it was issued for a state that no longer holds.
     /// </summary>
     public void Reconcile(string opId, string resolution, string note)
     {
@@ -342,7 +360,9 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
         string from = op.State;
         if (op.State == States.InFlight)
         {
-            if (op.Owner is { } o && o.IsAlive(out var why)) throw new Refusal("OWNER_ALIVE", $"operation is IN_FLIGHT and its server is running ({why}); wait for its outcome or stop that server first");
+            if (op.Owner is { } o && o.IsAlive(out var why))
+                throw new Refusal("OWNER_ALIVE", $"operation is IN_FLIGHT and its server is running ({why}). If that server is still between its write input and its check, wait for its outcome. " +
+                    $"If its execute_payment call has already returned (reported UNKNOWN, the database having refused to record the outcome), no outcome will come: stop that server (pid {o.Pid}), then reconcile");
         }
         else if (op.State != States.Unknown) throw new Refusal("NOT_UNKNOWN", $"operation is {op.State}; only UNKNOWN operations, or IN_FLIGHT ones whose server has ended, are reconciled");
         using var c = Open();
@@ -351,6 +371,7 @@ CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT 
             ("$s", to), ("$r", "human reconciliation: " + note), ("$n", Now()), ("$id", opId), ("$f", from), ("$op", op.OwnerPid));
         if (n != 1) throw new Refusal("STATE_CHANGED", $"{opId} changed state while being reconciled; read it again");
         Event(c, t, opId, "human_reconciled", $"{from} -> {to} ({resolution}): {note}");
+        Revoke(c, t, $"{opId} on the same account, invoice or row was reconciled ({resolution})", "account_key=$k OR invoice_ref=$i OR tx_id=$t", ("$k", op.AccountKey), ("$i", op.InvoiceRef), ("$t", op.TxId));
         t.Commit();
     }
 

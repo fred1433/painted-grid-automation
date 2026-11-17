@@ -145,7 +145,7 @@ public sealed class Ctx : IAsyncDisposable
         var rows = new List<(string Key, string Text)>();
         foreach (var (k, v) in new[] { ("requested", requested), ("observed", observed), ("state", state), ("reason", reason) })
         {
-            var lines = Wrap(v, width).Take(k == "reason" ? 5 : k == "observed" ? 2 : 1).ToList();
+            var lines = Wrap(v, width).ToList(); // never truncated: the band grows with the text
             for (int i = 0; i < lines.Count; i++) rows.Add((i == 0 ? k : "", lines[i]));
         }
         int band = 56 + rows.Count * line + 14;
@@ -172,7 +172,8 @@ public sealed class Ctx : IAsyncDisposable
     static IEnumerable<string> Wrap(string s, int width)
     {
         var line = new StringBuilder();
-        foreach (var w in (s ?? "").Split(' '))
+        // A word longer than a line (a path, an id) is cut into pieces of the line's width, so no text runs off the image.
+        foreach (var w in (s ?? "").Split(' ').SelectMany(x => Enumerable.Range(0, Math.Max(1, (x.Length + width - 1) / width)).Select(i => x.Substring(i * width, Math.Min(width, x.Length - i * width)))))
         {
             if (line.Length + w.Length + 1 > width && line.Length > 0) { yield return line.ToString(); line.Clear(); }
             line.Append(line.Length > 0 ? " " : "").Append(w);
