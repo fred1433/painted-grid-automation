@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- stdio MCP server. Logs go to stderr and to a JSONL file; stdout carries JSON-RPC only. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ledger-mcp</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <ProjectReference Include="..\GridDriver\GridDriver.csproj" />
+    <ProjectReference Include="..\Guard\Guard.csproj" />
+  </ItemGroup>
+</Project>

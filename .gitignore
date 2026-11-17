@@ -3,5 +3,9 @@ obj/
 out/
 probe-out/
 tessdata/
+work/
+work-local/
+proof-local/
+proof-run/
 .vs/
 *.user

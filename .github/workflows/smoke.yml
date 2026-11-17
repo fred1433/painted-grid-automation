@@ -2,7 +2,7 @@ name: smoke
 on:
   workflow_dispatch:
   push:
-    paths: ['probe/**', '.github/workflows/smoke.yml']
+    paths: ['probe/**', 'tools/fetch-tessdata.ps1', '.github/workflows/smoke.yml']
 jobs:
   probe:
     runs-on: windows-2025
@@ -18,7 +18,7 @@ jobs:
           dotnet --info | Select-Object -First 20
       - name: Pinned OCR model
         shell: pwsh
-        run: ./probe/fetch-tessdata.ps1
+        run: ./tools/fetch-tessdata.ps1
       - name: Build
         shell: pwsh
         run: |

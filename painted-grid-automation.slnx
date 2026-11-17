@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GridDriver/GridDriver.csproj" />
+    <Project Path="src/Guard/Guard.csproj" />
+    <Project Path="src/Ledger.App/Ledger.App.csproj" />
+    <Project Path="src/LedgerMcp/LedgerMcp.csproj" />
+    <Project Path="src/LedgerOperator/LedgerOperator.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ledger.Verifier/Ledger.Verifier.csproj" />
+    <Project Path="tests/Scenarios/Scenarios.csproj" />
+  </Folder>
+</Solution>

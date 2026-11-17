@@ -1,0 +1,42 @@
+name: windows-proof
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore: ['proof/**', '**/*.md', 'docs/**']
+jobs:
+  proof:
+    runs-on: windows-2025
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Pinned OCR model
+        shell: pwsh
+        run: ./tools/fetch-tessdata.ps1
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build src/Ledger.App/Ledger.App.csproj -c Release -o out/app
+          dotnet build src/LedgerMcp/LedgerMcp.csproj -c Release -o out/mcp
+          dotnet build src/LedgerOperator/LedgerOperator.csproj -c Release -o out/op
+          dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
+      - name: Versions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force proof-run | Out-Null
+          $v = @("runner image: $env:ImageOS $env:ImageVersion", "commit: $env:GITHUB_SHA", "run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID")
+          $v += (dotnet --list-runtimes)
+          $v += "eng.traineddata sha256: " + (Get-FileHash -Algorithm SHA256 tessdata/eng.traineddata).Hash.ToLowerInvariant()
+          $v += (dotnet list src/LedgerMcp/LedgerMcp.csproj package)
+          $v += "screen: " + (Get-CimInstance Win32_VideoController | ForEach-Object { "$($_.Name) $($_.CurrentHorizontalResolution)x$($_.CurrentVerticalResolution)" })
+          $v | Tee-Object -FilePath proof-run/versions.txt
+      - name: Scenarios (MCP client -> stdio server -> screen capture -> SendInput)
+        shell: pwsh
+        run: ./out/scenarios/scenarios.exe --app out/app/LedgerApp.exe --server out/mcp/ledger-mcp.exe --operator out/op/ledger-operator.exe --tessdata tessdata --out proof-run --work work --repo .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-run
+          path: proof-run

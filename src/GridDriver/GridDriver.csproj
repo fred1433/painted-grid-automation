@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The driver sees only what any outside process can see: the screen, input, Win32 and accessibility APIs.
+       It must never reference the witness application (checked by the architecture test). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+    <ProjectReference Include="..\Guard\Guard.csproj" />
+  </ItemGroup>
+</Project>

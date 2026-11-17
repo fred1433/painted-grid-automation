@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Scripted MCP client in its own process: client -> stdio server -> screen capture -> SendInput.
+       Plays the human approver through the operator CLI. Checks outcomes against the application's own journal. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>scenarios</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="2.4.0" />
+    <ProjectReference Include="..\Ledger.Verifier\Ledger.Verifier.csproj" />
+  </ItemGroup>
+</Project>
