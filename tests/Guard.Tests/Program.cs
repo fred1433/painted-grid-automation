@@ -293,6 +293,114 @@ public static class Program
         Assert(code == "INVOICE_HAS_OPERATION", $"the same invoice with another amount: expected INVOICE_HAS_OPERATION, got {code ?? "a second operation"}");
     }
 
+    // ------------------------------------------------------------------ a token is valid only for the state it was issued in
+
+    static void Approval_token_issued_before_a_reconciliation_is_refused_after_it()
+    {
+        var s = NewStore(out var db);
+        var op = Prep(s, "Ridge Freight", "INV-1090", "TX-0090");
+        string earlier = Approve(s, op);
+        string used = Approve(s, op);
+        s.Reserve(op.OpId, used, "test");
+        s.MarkWriteInputSent(op.OpId);
+        s.MarkUnknown(op.OpId, "test: the application froze after the submit input");
+        var (rc, _, rerr) = Cli("reconcile", "--db", db, "--op", op.OpId, "--resolution", "not-applied", "--note", "no payment in the ledger");
+        Assert(rc == 0 && s.Get(op.OpId).State == States.NotStarted, $"setup: reconcile not-applied, exit {rc}: {rerr.Trim()}");
+        var code = RefusalCode(() => s.Reserve(op.OpId, earlier, "replay of a token issued before the reconciliation"));
+        Assert(code == "APPROVAL_REVOKED" && s.Get(op.OpId).State == States.NotStarted,
+            $"a token issued before the UNKNOWN and its reconciliation: expected APPROVAL_REVOKED and NOT_STARTED, got {code ?? "ACCEPTED"} and {s.Get(op.OpId).State}");
+        s.Reserve(op.OpId, Approve(s, op), "a new approval, issued after the reconciliation");
+        Assert(s.Get(op.OpId).State == States.InFlight, "a new approval issued after the reconciliation is accepted");
+    }
+
+    static void Approval_twin_token_issued_before_the_neighbours_unknown_is_refused_after_its_reconciliation()
+    {
+        var s = NewStore(out var db);
+        var twin = Prep(s, "Northwind Supply", "INV-1091", "TX-0091", 55_000);
+        string twinToken = Approve(s, twin);
+        var neighbour = MakeUnknown(s, "Northwind Supply", "INV-1092", "TX-0092");
+        Assert(RefusalCode(() => s.Reserve(twin.OpId, twinToken, "while the neighbour is UNKNOWN")) == "ACCOUNT_BLOCKED_UNKNOWN", "setup: blocked while the neighbour is UNKNOWN");
+        var (rc, _, rerr) = Cli("reconcile", "--db", db, "--op", neighbour.OpId, "--resolution", "not-applied", "--note", "no payment in the ledger");
+        Assert(rc == 0, $"setup: reconcile not-applied, exit {rc}: {rerr.Trim()}");
+        var code = RefusalCode(() => s.Reserve(twin.OpId, twinToken, "replay after the neighbour's reconciliation"));
+        Assert(code == "APPROVAL_REVOKED" && s.Get(twin.OpId).State == States.NotStarted,
+            $"the twin's token, issued before its neighbour went UNKNOWN: expected APPROVAL_REVOKED, got {code ?? "ACCEPTED"} and {s.Get(twin.OpId).State}");
+    }
+
+    static void Approval_a_new_token_revokes_the_unused_one()
+    {
+        var s = NewStore(out _);
+        var op = Prep(s, "Pioneer Water", "INV-1093", "TX-0093");
+        string first = Approve(s, op);
+        string second = Approve(s, op);
+        Assert(RefusalCode(() => s.Reserve(op.OpId, first, "the older token")) == "APPROVAL_REVOKED", "the older token of the same operation is refused");
+        s.Reserve(op.OpId, second, "the newer token");
+        Assert(s.Get(op.OpId).State == States.InFlight, "the newer token is accepted");
+    }
+
+    // ------------------------------------------------------------------ a database that refuses the outcome after the click
+
+    static void Failure_outcome_refused_after_the_click_stays_in_flight_until_the_server_stops()
+    {
+        var s = NewStore(out var db);
+        var op = Prep(s, "Quarry Tools", "INV-1053", "TX-0053");
+        s.Reserve(op.OpId, Approve(s, op), "this process, alive");
+        s.MarkWriteInputSent(op.OpId);
+        File.SetAttributes(db, FileAttributes.ReadOnly);
+        string what;
+        try { s.MarkUnknown(op.OpId, "the application froze after the submit input"); what = "recorded"; }
+        catch (Exception e) { what = e.GetType().Name; }
+        finally { File.SetAttributes(db, FileAttributes.Normal); }
+        Assert(what != "recorded" && s.Get(op.OpId).State == States.InFlight, $"read-only database after the click: expected an error and IN_FLIGHT, got {what} and {s.Get(op.OpId).State}");
+        Assert(RefusalCode(() => Prep(s, "Quarry Tools", "INV-1054", "TX-0054")) == "ACCOUNT_BLOCKED_UNKNOWN", "the IN_FLIGHT operation blocks its account");
+        var (code, _, err) = Cli("reconcile", "--db", db, "--op", op.OpId, "--resolution", "not-applied", "--note", "x");
+        Assert(code == 1 && err.Contains("OWNER_ALIVE") && err.Contains($"pid {Environment.ProcessId}") && err.Contains("then reconcile"),
+            $"reconcile while that server runs: expected exit 1, OWNER_ALIVE, the server's pid and what to do, got exit {code}: {err.Trim()}");
+    }
+
+    // ------------------------------------------------------------------ the CLI opens only an existing database and refuses unknown options
+
+    static void Cli_refuses_a_database_that_does_not_exist()
+    {
+        string dir = Path.Combine(_root, "mistyped-" + Guid.NewGuid().ToString("N")[..6]);
+        string db = Path.Combine(dir, "operatons.db");
+        foreach (var args in new[] { new[] { "list", "--db", db }, new[] { "show", "--db", db, "--op", "OP-1" },
+                     new[] { "reconcile", "--db", db, "--op", "OP-1", "--resolution", "not-applied", "--note", "x" },
+                     new[] { "approve", "--db", db, "--op", "OP-1", "--tx", "TX-0001", "--amount", "1.00", "--currency", "USD", "--pid", "1" } })
+        {
+            var (code, outp, err) = Cli(args);
+            Assert(code == 2 && outp.Trim() == "" && err.Contains(Path.GetFullPath(db)) && !Directory.Exists(dir),
+                $"{args[0]} on a database that does not exist: expected exit 2, the full path named and nothing created, got exit {code}, '{outp.Trim()}', {err.Trim()}, folder {(Directory.Exists(dir) ? "created" : "absent")}");
+        }
+    }
+
+    static void Cli_refuses_unknown_options()
+    {
+        var s = NewStore(out var db);
+        var op = Prep(s, "Linden Print", "INV-1062", "TX-0062", 123_400);
+        foreach (var args in new[]
+        {
+            new[] { "approve", "--db", db, "--op", op.OpId, "--tx", "TX-0062", "--amount", "1,234.00", "--currency", "USD", "--pid", "4242", "--tll-seconds", "5" },
+            new[] { "list", "--db", db, "--op", op.OpId },
+            new[] { "show", "--db", db, "--op", op.OpId, "--op", "OP-OTHER" },
+        })
+        {
+            var (code, outp, err) = Cli(args);
+            Assert(code == 2 && outp.Trim() == "", $"{string.Join(' ', args.Skip(3))}: expected exit 2 and nothing on stdout, got exit {code}: {outp.Trim()} {err.Trim()}");
+        }
+    }
+
+    static void Identity_letters_that_do_not_decompose_fold_too()
+    {
+        foreach (var (recorded, typed) in new[] { ("Søren Supply", "Soren Supply"), ("Straße Supply", "Strasse Supply"), ("Łódź Freight", "Lodz Freight"), ("Æther Print", "Aether Print"), ("Œuvre Office", "Oeuvre Office"), ("ﬁeld Tools", "Field Tools") })
+        {
+            var s = NewStore(out _);
+            MakeUnknown(s, recorded, "INV-1100", "TX-0100");
+            var code = RefusalCode(() => Prep(s, typed, "INV-1101", "TX-0101", 9_900));
+            Assert(code == "ACCOUNT_BLOCKED_UNKNOWN", $"'{typed}' after UNKNOWN on '{recorded}': expected ACCOUNT_BLOCKED_UNKNOWN, got {code ?? "a new operation"}");
+        }
+    }
+
     // ------------------------------------------------------------------ behaviour kept from before (must pass before and after)
 
     static void Approval_approval_is_single_use_and_bound()
