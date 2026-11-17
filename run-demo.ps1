@@ -13,5 +13,6 @@ dotnet build tests/Scenarios/Scenarios.csproj -c Release -o out/scenarios
 $runArgs = @('--app', 'out/app/LedgerApp.exe', '--server', 'out/mcp/ledger-mcp.exe', '--operator', 'out/op/ledger-operator.exe', '--tessdata', 'tessdata', '--out', 'proof-local', '--work', 'work-local', '--repo', '.')
 if ($Only -ne "") { $runArgs += @('--only', $Only) }
 & ./out/scenarios/scenarios.exe @runArgs
-exit $LASTEXITCODE
-Write-Host "Results: proof-local/summary.md"
+$code = $LASTEXITCODE
+Write-Host "Results: proof-local/summary.md (exit code $code)"
+exit $code
