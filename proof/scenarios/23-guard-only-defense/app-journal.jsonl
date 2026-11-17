@@ -1,13 +1,13 @@
-{"at":"2026-11-17T17:13:26.8989909Z","evt":"created","data":{"seed":221,"flags":["freeze-after-post"],"rows":41,"look_alike_pair":["TX-0031","TX-0037"]}}
-{"at":"2026-11-17T17:13:26.9043315Z","evt":"started","data":{"pid":4392,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:13:30.4979527Z","evt":"selection_changed","data":{"tx":"TX-0022","source":"mouse"}}
-{"at":"2026-11-17T17:13:33.0431107Z","evt":"selection_changed","data":{"tx":"TX-0022","source":"mouse"}}
-{"at":"2026-11-17T17:13:33.3629488Z","evt":"dialog_opened","data":{"tx":"TX-0022","invoice_ref":"INV-1022"}}
-{"at":"2026-11-17T17:13:33.7788934Z","evt":"dialog_field_changed","data":{"field":"amount","text":"797.51"}}
-{"at":"2026-11-17T17:13:33.7804595Z","evt":"dialog_field_changed","data":{"field":"amount","text":"797.51"}}
-{"at":"2026-11-17T17:13:33.8188181Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
-{"at":"2026-11-17T17:13:33.8698051Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-4711FF35"}}
-{"at":"2026-11-17T17:13:33.8708073Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-4711FF35"}}
-{"at":"2026-11-17T17:13:34.0844699Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0022","invoice_ref":"INV-1022","account":"Cedar Lane Signs","amount_cents":79751,"date":"2026-03-31","memo":"OP-4711FF35"}}
-{"at":"2026-11-17T17:13:34.0863929Z","evt":"freeze_after_post","data":{"invoice":"INV-1022"}}
-{"at":"2026-11-17T17:13:43.3403817Z","evt":"started","data":{"pid":6080,"loaded":true,"rows":42,"stale_view":true,"hidden":1}}
+{"at":"2026-11-17T17:53:54.6595861Z","evt":"created","data":{"seed":221,"flags":["freeze-after-post"],"rows":41,"look_alike_pair":["TX-0031","TX-0037"]}}
+{"at":"2026-11-17T17:53:54.6672250Z","evt":"started","data":{"pid":4996,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:53:59.1337362Z","evt":"selection_changed","data":{"tx":"TX-0022","source":"mouse"}}
+{"at":"2026-11-17T17:54:02.1678881Z","evt":"selection_changed","data":{"tx":"TX-0022","source":"mouse"}}
+{"at":"2026-11-17T17:54:02.5159199Z","evt":"dialog_opened","data":{"tx":"TX-0022","invoice_ref":"INV-1022"}}
+{"at":"2026-11-17T17:54:02.9576770Z","evt":"dialog_field_changed","data":{"field":"amount","text":"797.51"}}
+{"at":"2026-11-17T17:54:02.9597597Z","evt":"dialog_field_changed","data":{"field":"amount","text":"797.51"}}
+{"at":"2026-11-17T17:54:03.0271168Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:54:03.1200555Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-A9506EC7"}}
+{"at":"2026-11-17T17:54:03.1216374Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-A9506EC7"}}
+{"at":"2026-11-17T17:54:03.4673484Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0022","invoice_ref":"INV-1022","account":"Cedar Lane Signs","amount_cents":79751,"date":"2026-03-31","memo":"OP-A9506EC7"}}
+{"at":"2026-11-17T17:54:03.4699865Z","evt":"freeze_after_post","data":{"invoice":"INV-1022"}}
+{"at":"2026-11-17T17:54:12.7703795Z","evt":"started","data":{"pid":2456,"loaded":true,"rows":42,"stale_view":true,"hidden":1}}

@@ -24,9 +24,9 @@
 | `23-guard-only-defense` | the payment was saved but the restarted app still shows the invoice Open: only UNKNOWN refuses it, whatever the account spelling | **PASS** | 11/11 |
 | `24-second-server-mid-write` | a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first | **PASS** | 7/7 |
 | `26-slow-save-left-alone` | the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click | **PASS** | 5/5 |
-| `25-unexpected-exception` | a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN that a human can reconcile; never left IN_FLIGHT | **PASS** | 8/8 |
-| `27-full-coverage-500-rows` | 501 rows, look-alike rows near both ends, scan started from the bottom: every row is read before any click | **PASS** | 5/5 |
+| `25-unexpected-exception` | a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN recorded by the running server, which a human reconciles while it runs | **PASS** | 8/8 |
+| `27-full-coverage-501-rows` | 501 rows, look-alike rows near both ends, scan started from the bottom: every row is read before any click | **PASS** | 5/5 |
 | `28-real-wrong-click` | a real click lands on the neighbouring row: the highlighted row is read, the route stops, no second click, no payment | **PASS** | 4/4 |
 | `29-access-denied` | the application runs above the server's integrity level, and MSAA answers E_ACCESSDENIED: ACCESS_DENIED, no fallback, no input | **PASS** | 6/6 |
-| `30-uia-failures` | an error inside a UIA call keeps its code; a UIA call past its time limit writes no further field | **PASS** | 7/7 |
+| `30-uia-failures` | an error inside a UIA call keeps its code; a UIA call past its time limit starts no further field: the amount, already sent, lands; the date and the memo never do | **PASS** | 7/7 |
 | `31-pixel-check-strict` | 1,000.00 drawn, 1,200.00 claimed (and the reverse): refused; the same value: accepted | **PASS** | 5/5 |

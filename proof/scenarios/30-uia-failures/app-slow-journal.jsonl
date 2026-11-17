@@ -1,0 +1,8 @@
+{"at":"2026-11-17T17:55:56.3170243Z","evt":"created","data":{"seed":261,"flags":["slow-amount-field"],"rows":41,"look_alike_pair":["TX-0003","TX-0018"]}}
+{"at":"2026-11-17T17:55:56.3237092Z","evt":"started","data":{"pid":8420,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:56:00.3323017Z","evt":"selection_changed","data":{"tx":"TX-0032","source":"mouse"}}
+{"at":"2026-11-17T17:56:03.1580727Z","evt":"selection_changed","data":{"tx":"TX-0032","source":"mouse"}}
+{"at":"2026-11-17T17:56:03.4979266Z","evt":"dialog_opened","data":{"tx":"TX-0032","invoice_ref":"INV-1032"}}
+{"at":"2026-11-17T17:56:03.9399647Z","evt":"dialog_field_changed","data":{"field":"amount","text":"250.68"}}
+{"at":"2026-11-17T17:56:03.9418875Z","evt":"amount_field_slow","data":{"seconds":6}}
+{"at":"2026-11-17T17:56:09.9452315Z","evt":"dialog_field_changed","data":{"field":"amount","text":"250.68"}}

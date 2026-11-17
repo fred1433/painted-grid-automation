@@ -1,7 +1,7 @@
-{"at":"2026-11-17T17:13:26.4752068Z","check":"src/GridDriver/GridDriver.csproj references neither the application nor the verifier","ok":true}
-{"at":"2026-11-17T17:13:26.4753328Z","check":"src/LedgerMcp/LedgerMcp.csproj references neither the application nor the verifier","ok":true}
-{"at":"2026-11-17T17:13:26.4754285Z","check":"src/Guard/Guard.csproj references neither the application nor the verifier","ok":true}
-{"at":"2026-11-17T17:13:26.4755253Z","check":"src/LedgerOperator/LedgerOperator.csproj references neither the application nor the verifier","ok":true}
-{"at":"2026-11-17T17:13:26.4817796Z","check":"GridDriver.dll compiled references: UIAutomationClient, UIAutomationTypes, Accessibility, Guard, WinRT.Runtime, Tesseract, WindowsBase","ok":true}
-{"at":"2026-11-17T17:13:26.4821595Z","check":"ledger-mcp.dll compiled references: ModelContextProtocol.Core, GridDriver, Guard, ModelContextProtocol","ok":true}
-{"at":"2026-11-17T17:13:26.4822114Z","check":"the server\u0027s output folder contains neither LedgerApp.dll nor Ledger.Verifier.dll","ok":true}
+{"at":"2026-11-17T17:53:54.2119500Z","check":"src/GridDriver/GridDriver.csproj references neither the application nor the verifier","ok":true}
+{"at":"2026-11-17T17:53:54.2120748Z","check":"src/LedgerMcp/LedgerMcp.csproj references neither the application nor the verifier","ok":true}
+{"at":"2026-11-17T17:53:54.2121743Z","check":"src/Guard/Guard.csproj references neither the application nor the verifier","ok":true}
+{"at":"2026-11-17T17:53:54.2122887Z","check":"src/LedgerOperator/LedgerOperator.csproj references neither the application nor the verifier","ok":true}
+{"at":"2026-11-17T17:53:54.2198343Z","check":"GridDriver.dll compiled references: UIAutomationClient, UIAutomationTypes, Accessibility, Guard, WinRT.Runtime, Tesseract, WindowsBase","ok":true}
+{"at":"2026-11-17T17:53:54.2203894Z","check":"ledger-mcp.dll compiled references: ModelContextProtocol.Core, GridDriver, Guard, ModelContextProtocol","ok":true}
+{"at":"2026-11-17T17:53:54.2204556Z","check":"the server\u0027s output folder contains neither LedgerApp.dll nor Ledger.Verifier.dll","ok":true}

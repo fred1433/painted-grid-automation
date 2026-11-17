@@ -1,13 +1,13 @@
-{"at":"2026-11-17T17:10:06.1242869Z","evt":"created","data":{"seed":21,"flags":[],"rows":41,"look_alike_pair":["TX-0032","TX-0018"]}}
-{"at":"2026-11-17T17:10:06.1294417Z","evt":"started","data":{"pid":7492,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:10:09.8010058Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
-{"at":"2026-11-17T17:10:12.1078462Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
-{"at":"2026-11-17T17:10:12.4122802Z","evt":"dialog_opened","data":{"tx":"TX-0016","invoice_ref":"INV-1016"}}
-{"at":"2026-11-17T17:10:12.8179868Z","evt":"dialog_field_changed","data":{"field":"amount","text":"4,787.77"}}
-{"at":"2026-11-17T17:10:12.8193709Z","evt":"dialog_field_changed","data":{"field":"amount","text":"4,787.77"}}
-{"at":"2026-11-17T17:10:12.8575552Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
-{"at":"2026-11-17T17:10:12.9067630Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-9C864228"}}
-{"at":"2026-11-17T17:10:12.9075876Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-9C864228"}}
-{"at":"2026-11-17T17:10:13.1169095Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0016","invoice_ref":"INV-1016","account":"Summit Janitorial","amount_cents":478777,"date":"2026-03-31","memo":"OP-9C864228"}}
-{"at":"2026-11-17T17:10:15.0533922Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
-{"at":"2026-11-17T17:10:17.0900432Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
+{"at":"2026-11-17T17:50:11.2521042Z","evt":"created","data":{"seed":21,"flags":[],"rows":41,"look_alike_pair":["TX-0032","TX-0018"]}}
+{"at":"2026-11-17T17:50:11.2584454Z","evt":"started","data":{"pid":828,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:50:15.3514731Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
+{"at":"2026-11-17T17:50:17.9810138Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
+{"at":"2026-11-17T17:50:18.3096749Z","evt":"dialog_opened","data":{"tx":"TX-0016","invoice_ref":"INV-1016"}}
+{"at":"2026-11-17T17:50:18.7386730Z","evt":"dialog_field_changed","data":{"field":"amount","text":"4,787.77"}}
+{"at":"2026-11-17T17:50:18.7406486Z","evt":"dialog_field_changed","data":{"field":"amount","text":"4,787.77"}}
+{"at":"2026-11-17T17:50:18.7966047Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:50:18.8711248Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-290208D6"}}
+{"at":"2026-11-17T17:50:18.8724675Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-290208D6"}}
+{"at":"2026-11-17T17:50:19.1804568Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0016","invoice_ref":"INV-1016","account":"Summit Janitorial","amount_cents":478777,"date":"2026-03-31","memo":"OP-290208D6"}}
+{"at":"2026-11-17T17:50:21.3393279Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}
+{"at":"2026-11-17T17:50:23.6717257Z","evt":"selection_changed","data":{"tx":"TX-0016","source":"mouse"}}

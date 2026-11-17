@@ -9,20 +9,20 @@ info: Microsoft.Hosting.Lifetime[0]
 info: ModelContextProtocol.Server.McpServer[570385771]
       Server (ledger-grid 0.1.0) method 'initialize' request handler called.
 info: ModelContextProtocol.Server.McpServer[1867955179]
-      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'initialize' request handler completed in 23.2852ms.
-info: ModelContextProtocol.Server.McpServer[570385771]
-      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler called.
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'initialize' request handler completed in 27.3933ms.
 info: ModelContextProtocol.Server.McpServer[570385771]
       Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/list' request handler called.
+info: ModelContextProtocol.Server.McpServer[570385771]
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler called.
 info: ModelContextProtocol.Server.McpServer[1867955179]
-      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/list' request handler completed in 11.9215ms.
-{"at":"2026-11-17T17:09:59.2652297Z","pid":6688,"kind":"server_start","data":{"pid":6688,"db":"operations.db","recovered_in_flight_to_unknown":0,"recovery":"done","integrity":"high (0x3000)","allow_exe":"LedgerApp.exe","faults":[]}}
-{"at":"2026-11-17T17:09:59.2891830Z","pid":6688,"kind":"call","data":{"tool":"operation_status","args":{"opId":"OP-00000000"}}}
-{"at":"2026-11-17T17:09:59.2950484Z","pid":6688,"kind":"result","data":{"tool":"operation_status","ms":5,"code":"OPERATION_NOT_FOUND","message":"no operation OP-00000000","decision":{"Step":"operation_status","Methods":[],"Observations":["route lock acquired after 0 ms"],"Candidates":null,"Discriminant":null,"CriteriaMet":[],"RefusalCode":"OPERATION_NOT_FOUND","RefusalReason":"no operation OP-00000000","Captures":[]}}}
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/list' request handler completed in 16.3708ms.
+{"at":"2026-11-17T17:50:03.6035436Z","pid":1760,"kind":"server_start","data":{"pid":1760,"db":"D:\\a\\painted-grid-automation\\painted-grid-automation\\work\\01-protocol-surface\\operations.db","recovered_in_flight_to_unknown":0,"recovery":"done","integrity":"high (0x3000)","allow_exe":"LedgerApp.exe","faults":[]}}
+{"at":"2026-11-17T17:50:03.6365198Z","pid":1760,"kind":"call","data":{"tool":"operation_status","args":{"opId":"OP-00000000"}}}
+{"at":"2026-11-17T17:50:03.6435510Z","pid":1760,"kind":"result","data":{"tool":"operation_status","ms":7,"code":"OPERATION_NOT_FOUND","message":"no operation OP-00000000","decision":{"Step":"operation_status","Methods":[],"Observations":["route lock acquired after 0 ms"],"Candidates":null,"Discriminant":null,"CriteriaMet":[],"RefusalCode":"OPERATION_NOT_FOUND","RefusalReason":"no operation OP-00000000","Captures":[]}}}
 info: ModelContextProtocol.Server.McpServer[2065726448]
       "operation_status" completed. IsError = True.
 info: ModelContextProtocol.Server.McpServer[1867955179]
-      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler completed in 173.4133ms.
+      Server (ledger-grid 0.1.0), Client (raw-stdout-check 1) method 'tools/call' request handler completed in 209.9194ms.
 info: ModelContextProtocol.Server.StdioServerTransport[1221292038]
       Server (stream) (ledger-grid) transport completed reading messages.
 info: Microsoft.Hosting.Lifetime[0]

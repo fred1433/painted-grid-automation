@@ -2,14 +2,14 @@
   "runner_image": "win25-vs2026 20261103.298.1",
   "os": "Microsoft Windows 10.0.26100",
   "dotnet": ".NET 8.0.34",
-  "commit": "a81481c3958fa355efec6b2b56d53c03c44c9c89",
-  "run": "44133674369",
+  "commit": "d54924ca966834bbee60831d680098bb3d6087b5",
+  "run": "44140960336",
   "scenarios": [
     {
       "scenario": "01-protocol-surface",
       "what": "tools/list, annotations, structured errors, stdout carries JSON-RPC only",
       "result": "PASS",
-      "seconds": 5.3,
+      "seconds": 5.6,
       "checks": [
         {
           "ok": true,
@@ -61,7 +61,7 @@
       "scenario": "02-capability-diagnostic",
       "what": "UIA, MSAA and Win32 see no rows; image and OCR do; the search box works through UIA",
       "result": "PASS",
-      "seconds": 3.2,
+      "seconds": 3.9,
       "checks": [
         {
           "ok": true,
@@ -113,7 +113,7 @@
       "scenario": "03-correct-write-seed-21",
       "what": "one approved payment, verified selection, confirmed postcondition, then no second write",
       "result": "PASS",
-      "seconds": 11.5,
+      "seconds": 13,
       "checks": [
         {
           "ok": true,
@@ -165,7 +165,7 @@
       "scenario": "04-correct-write-seed-22",
       "what": "same with another seed (row order, window position, column widths)",
       "result": "PASS",
-      "seconds": 11.7,
+      "seconds": 13,
       "checks": [
         {
           "ok": true,
@@ -217,7 +217,7 @@
       "scenario": "05-correct-write-seed-23",
       "what": "same with a third seed",
       "result": "PASS",
-      "seconds": 11.1,
+      "seconds": 12.4,
       "checks": [
         {
           "ok": true,
@@ -269,7 +269,7 @@
       "scenario": "06-duplicate-rows",
       "what": "two rows with identical Account, Type and Amount: Ref # decides, never the first match",
       "result": "PASS",
-      "seconds": 9.6,
+      "seconds": 10.8,
       "checks": [
         {
           "ok": true,
@@ -313,7 +313,7 @@
       "scenario": "07-target-off-screen",
       "what": "target below the visible rows: real wheel scrolling, then located again",
       "result": "PASS",
-      "seconds": 4.3,
+      "seconds": 4.8,
       "checks": [
         {
           "ok": true,
@@ -341,7 +341,7 @@
       "scenario": "08-sort-between-locate-and-write",
       "what": "the grid is re-sorted after prepare: execute locates again by business identity",
       "result": "PASS",
-      "seconds": 10.2,
+      "seconds": 11.3,
       "checks": [
         {
           "ok": true,
@@ -369,7 +369,7 @@
       "scenario": "09-parasite-window",
       "what": "a topmost window covers the grid: no input, operation back to NOT_STARTED",
       "result": "PASS",
-      "seconds": 5.9,
+      "seconds": 6.5,
       "checks": [
         {
           "ok": true,
@@ -377,7 +377,7 @@
         },
         {
           "ok": true,
-          "Text": "execute_payment stops with WINDOW_BLOCKED: point 493,393 is covered by window \u0027Reminder\u0027 class WindowsForms10.Window.8.app.0.1f550a4_r3_ad1 pid 3540; no input sent"
+          "Text": "execute_payment stops with WINDOW_BLOCKED: point 493,393 is covered by window \u0027Reminder\u0027 class WindowsForms10.Window.8.app.0.1f550a4_r3_ad1 pid 5288; no input sent"
         },
         {
           "ok": true,
@@ -393,11 +393,11 @@
       "scenario": "10-decoy-window",
       "what": "a window with the same title from another executable is rejected",
       "result": "PASS",
-      "seconds": 3.8,
+      "seconds": 4.2,
       "checks": [
         {
           "ok": true,
-          "Text": "attached to the allowlisted process 2324, not to the decoy 1196"
+          "Text": "attached to the allowlisted process 768, not to the decoy 616"
         },
         {
           "ok": true,
@@ -417,7 +417,7 @@
       "scenario": "11-approval-checks",
       "what": "EUR refused; the CLI issues no token for other values; missing, unknown, foreign, expired, previous-process and reused tokens refused",
       "result": "PASS",
-      "seconds": 18.3,
+      "seconds": 20.3,
       "checks": [
         {
           "ok": true,
@@ -429,19 +429,19 @@
         },
         {
           "ok": true,
-          "Text": "operator approve with another row: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-0080B964: row TX-0018 (recorded TX-0039); no token issued)"
+          "Text": "operator approve with another row: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-B310856A: row TX-0018 (recorded TX-0039); no token issued)"
         },
         {
           "ok": true,
-          "Text": "operator approve with another amount: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-0080B964: amount 82883 cents (recorded 82783); no token issued)"
+          "Text": "operator approve with another amount: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-B310856A: amount 82883 cents (recorded 82783); no token issued)"
         },
         {
           "ok": true,
-          "Text": "operator approve with another currency: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-0080B964: currency EUR (recorded USD); no token issued)"
+          "Text": "operator approve with another currency: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-B310856A: currency EUR (recorded USD); no token issued)"
         },
         {
           "ok": true,
-          "Text": "operator approve with another process: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-0080B964: process 4085 (recorded 4084); no token issued)"
+          "Text": "operator approve with another process: exit 1, no token (APPROVAL_VALUES_MISMATCH: the values typed do not match OP-B310856A: process 6125 (recorded 6124); no token issued)"
         },
         {
           "ok": true,
@@ -469,7 +469,7 @@
         },
         {
           "ok": true,
-          "Text": "after the application restarts, the same operation is prepared again for process 9568"
+          "Text": "after the application restarts, the same operation is prepared again for process 1076"
         },
         {
           "ok": true,
@@ -497,7 +497,7 @@
       "scenario": "12-concurrent-same-approval",
       "what": "two servers execute with the same token at once: one write",
       "result": "PASS",
-      "seconds": 10.3,
+      "seconds": 10.9,
       "checks": [
         {
           "ok": true,
@@ -525,7 +525,7 @@
       "scenario": "13-concurrent-two-operations",
       "what": "two operations at once on one server: serialised, both correct",
       "result": "PASS",
-      "seconds": 16.1,
+      "seconds": 18.4,
       "checks": [
         {
           "ok": true,
@@ -553,7 +553,7 @@
       "scenario": "14-freeze-after-post",
       "what": "the app freezes after saving the payment: UNKNOWN, restart, new request refused, one payment",
       "result": "PASS",
-      "seconds": 21.1,
+      "seconds": 22.7,
       "checks": [
         {
           "ok": true,
@@ -601,7 +601,7 @@
       "scenario": "15-freeze-before-post",
       "what": "the app freezes before saving: UNKNOWN too (the cost), human reconciliation, then one payment",
       "result": "PASS",
-      "seconds": 26.3,
+      "seconds": 28.5,
       "checks": [
         {
           "ok": true,
@@ -641,7 +641,7 @@
       "scenario": "16-driver-crash-after-submit",
       "what": "the server dies between the submit input and its check: IN_FLIGHT becomes UNKNOWN at restart",
       "result": "PASS",
-      "seconds": 9.6,
+      "seconds": 10.7,
       "checks": [
         {
           "ok": true,
@@ -653,7 +653,7 @@
         },
         {
           "ok": true,
-          "Text": "the restarted server turned IN_FLIGHT into UNKNOWN: found IN_FLIGHT after its server process ended (no process 5000 is running): the outcome of the write input is not known"
+          "Text": "the restarted server turned IN_FLIGHT into UNKNOWN: found IN_FLIGHT after its server process ended (no process 7212 is running): the outcome of the write input is not known"
         },
         {
           "ok": true,
@@ -669,7 +669,7 @@
       "scenario": "17-intent-journal-failure",
       "what": "the operation database is read-only on disk: INTENT_NOT_PERSISTED, no input, approval not consumed",
       "result": "PASS",
-      "seconds": 9,
+      "seconds": 10.3,
       "checks": [
         {
           "ok": true,
@@ -697,7 +697,7 @@
       "scenario": "18-ocr-lookalike-glyphs",
       "what": "an amount drawn with letter O and letter l: refused rather than written",
       "result": "PASS",
-      "seconds": 4.1,
+      "seconds": 4.6,
       "checks": [
         {
           "ok": true,
@@ -717,7 +717,7 @@
       "scenario": "19-ocr-dropped-group",
       "what": "one reader reads 1,000.00 as 100.00 (injected): the readers disagree, refused",
       "result": "PASS",
-      "seconds": 5.4,
+      "seconds": 6.3,
       "checks": [
         {
           "ok": true,
@@ -737,7 +737,7 @@
       "scenario": "20-screen-text-is-data",
       "what": "a cell that says APPROVE PAYMENT grants nothing",
       "result": "PASS",
-      "seconds": 5.8,
+      "seconds": 7.7,
       "checks": [
         {
           "ok": true,
@@ -797,7 +797,7 @@
       "scenario": "23-guard-only-defense",
       "what": "the payment was saved but the restarted app still shows the invoice Open: only UNKNOWN refuses it, whatever the account spelling",
       "result": "PASS",
-      "seconds": 19.8,
+      "seconds": 22.1,
       "checks": [
         {
           "ok": true,
@@ -837,7 +837,7 @@
         },
         {
           "ok": true,
-          "Text": "the store holds one operation only: OP-4711FF35 UNKNOWN INV-1022 TX-0022 Cedar Lane Signs 79751 2026-03-31"
+          "Text": "the store holds one operation only: OP-A9506EC7 UNKNOWN INV-1022 TX-0022 Cedar Lane Signs 79751 2026-03-31"
         },
         {
           "ok": true,
@@ -849,7 +849,7 @@
       "scenario": "24-second-server-mid-write",
       "what": "a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first",
       "result": "PASS",
-      "seconds": 9.7,
+      "seconds": 12.1,
       "checks": [
         {
           "ok": true,
@@ -885,7 +885,7 @@
       "scenario": "26-slow-save-left-alone",
       "what": "the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click",
       "result": "PASS",
-      "seconds": 15.4,
+      "seconds": 16.6,
       "checks": [
         {
           "ok": true,
@@ -911,9 +911,9 @@
     },
     {
       "scenario": "25-unexpected-exception",
-      "what": "a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN that a human can reconcile; never left IN_FLIGHT",
+      "what": "a Win32Exception before, then after, the Post click: NOT_STARTED, then UNKNOWN recorded by the running server, which a human reconciles while it runs",
       "result": "PASS",
-      "seconds": 13.8,
+      "seconds": 16.1,
       "checks": [
         {
           "ok": true,
@@ -921,7 +921,7 @@
         },
         {
           "ok": true,
-          "Text": "a Win32Exception before the Post click: UNEXPECTED_ERROR: StopException: Win32Exception: fault injected (throw-before-submit): screen capture failed just before the Post click; no write input was sent"
+          "Text": "a Win32Exception before the Post click: UNEXPECTED_ERROR: Win32Exception: fault injected (throw-before-submit): screen capture failed just before the Post click; no write input was sent"
         },
         {
           "ok": true,
@@ -950,10 +950,10 @@
       ]
     },
     {
-      "scenario": "27-full-coverage-500-rows",
+      "scenario": "27-full-coverage-501-rows",
       "what": "501 rows, look-alike rows near both ends, scan started from the bottom: every row is read before any click",
       "result": "PASS",
-      "seconds": 31,
+      "seconds": 34.1,
       "checks": [
         {
           "ok": true,
@@ -981,7 +981,7 @@
       "scenario": "28-real-wrong-click",
       "what": "a real click lands on the neighbouring row: the highlighted row is read, the route stops, no second click, no payment",
       "result": "PASS",
-      "seconds": 6.4,
+      "seconds": 6.8,
       "checks": [
         {
           "ok": true,
@@ -1005,11 +1005,11 @@
       "scenario": "29-access-denied",
       "what": "the application runs above the server\u0027s integrity level, and MSAA answers E_ACCESSDENIED: ACCESS_DENIED, no fallback, no input",
       "result": "PASS",
-      "seconds": 2.8,
+      "seconds": 3.2,
       "checks": [
         {
           "ok": true,
-          "Text": "inspect_grid: ACCESS_DENIED: pid 9284 runs at integrity high (0x3000), this server at medium (0x2000): Windows drops input and messages sent to a higher level (UIPI) without an error; no input sent"
+          "Text": "inspect_grid: ACCESS_DENIED: pid 4380 runs at integrity high (0x3000), this server at medium (0x2000): Windows drops input and messages sent to a higher level (UIPI) without an error; no input sent"
         },
         {
           "ok": true,
@@ -1035,9 +1035,9 @@
     },
     {
       "scenario": "30-uia-failures",
-      "what": "an error inside a UIA call keeps its code; a UIA call past its time limit writes no further field",
+      "what": "an error inside a UIA call keeps its code; a UIA call past its time limit starts no further field: the amount, already sent, lands; the date and the memo never do",
       "result": "PASS",
-      "seconds": 26.6,
+      "seconds": 28.2,
       "checks": [
         {
           "ok": true,
@@ -1061,7 +1061,7 @@
         },
         {
           "ok": true,
-          "Text": "no field was written after the time limit (fields written: amount, amount)"
+          "Text": "only the amount, whose UIA call was already sent, reached the application, with the approved value 250.68; the date and the memo were never written. TextChanged events, timed from the return of execute_payment: amount \u0027250.68\u0027 at -4.4 s; amount \u0027250.68\u0027 at \u002B1.6 s"
         },
         {
           "ok": true,

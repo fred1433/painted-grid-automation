@@ -1,6 +1,6 @@
-{"at":"2026-11-17T17:15:08.3500896Z","evt":"created","data":{"seed":81,"flags":["dialog-other-invoice"],"rows":41,"look_alike_pair":["TX-0007","TX-0012"]}}
-{"at":"2026-11-17T17:15:08.3557353Z","evt":"started","data":{"pid":8408,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:15:11.8916266Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
-{"at":"2026-11-17T17:15:14.4050707Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
-{"at":"2026-11-17T17:15:14.7243322Z","evt":"dialog_opened","data":{"tx":"TX-0039","invoice_ref":"INV-1039"}}
-{"at":"2026-11-17T17:15:15.1109198Z","evt":"dialog_cancelled","data":{"tx":"TX-0039"}}
+{"at":"2026-11-17T17:55:48.2967049Z","evt":"created","data":{"seed":81,"flags":["dialog-other-invoice"],"rows":41,"look_alike_pair":["TX-0007","TX-0012"]}}
+{"at":"2026-11-17T17:55:48.3041529Z","evt":"started","data":{"pid":7616,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:55:52.2562959Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:55:55.1026829Z","evt":"selection_changed","data":{"tx":"TX-0039","source":"mouse"}}
+{"at":"2026-11-17T17:55:55.4377020Z","evt":"dialog_opened","data":{"tx":"TX-0039","invoice_ref":"INV-1039"}}
+{"at":"2026-11-17T17:55:55.8181932Z","evt":"dialog_cancelled","data":{"tx":"TX-0039"}}

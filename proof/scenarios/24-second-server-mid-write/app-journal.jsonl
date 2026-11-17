@@ -1,12 +1,12 @@
-{"at":"2026-11-17T17:13:47.0392785Z","evt":"created","data":{"seed":232,"flags":[],"rows":41,"look_alike_pair":["TX-0039","TX-0030"]}}
-{"at":"2026-11-17T17:13:47.0450170Z","evt":"started","data":{"pid":7236,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:13:50.5707028Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
-{"at":"2026-11-17T17:13:53.0496144Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
-{"at":"2026-11-17T17:13:53.3522010Z","evt":"dialog_opened","data":{"tx":"TX-0006","invoice_ref":"INV-1006"}}
-{"at":"2026-11-17T17:13:53.7717383Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,378.66"}}
-{"at":"2026-11-17T17:13:53.7731944Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,378.66"}}
-{"at":"2026-11-17T17:13:53.8110543Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
-{"at":"2026-11-17T17:13:53.8602029Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-D4E48D94"}}
-{"at":"2026-11-17T17:13:53.8610440Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-D4E48D94"}}
-{"at":"2026-11-17T17:13:54.0904969Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0006","invoice_ref":"INV-1006","account":"Linden Print","amount_cents":137866,"date":"2026-03-31","memo":"OP-D4E48D94"}}
-{"at":"2026-11-17T17:13:56.2346490Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
+{"at":"2026-11-17T17:54:17.1261623Z","evt":"created","data":{"seed":232,"flags":[],"rows":41,"look_alike_pair":["TX-0039","TX-0030"]}}
+{"at":"2026-11-17T17:54:17.1343954Z","evt":"started","data":{"pid":4344,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:54:21.4458713Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
+{"at":"2026-11-17T17:54:24.6745602Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}
+{"at":"2026-11-17T17:54:25.0460945Z","evt":"dialog_opened","data":{"tx":"TX-0006","invoice_ref":"INV-1006"}}
+{"at":"2026-11-17T17:54:25.5038293Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,378.66"}}
+{"at":"2026-11-17T17:54:25.5058070Z","evt":"dialog_field_changed","data":{"field":"amount","text":"1,378.66"}}
+{"at":"2026-11-17T17:54:25.5730236Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:54:25.6666563Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-FCFA7C08"}}
+{"at":"2026-11-17T17:54:25.6682011Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-FCFA7C08"}}
+{"at":"2026-11-17T17:54:26.0256199Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0006","invoice_ref":"INV-1006","account":"Linden Print","amount_cents":137866,"date":"2026-03-31","memo":"OP-FCFA7C08"}}
+{"at":"2026-11-17T17:54:28.5516834Z","evt":"selection_changed","data":{"tx":"TX-0006","source":"mouse"}}

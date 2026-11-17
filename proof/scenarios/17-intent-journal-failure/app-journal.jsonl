@@ -1,12 +1,12 @@
-{"at":"2026-11-17T17:13:00.9320569Z","evt":"created","data":{"seed":141,"flags":[],"rows":41,"look_alike_pair":["TX-0030","TX-0012"]}}
-{"at":"2026-11-17T17:13:00.9370928Z","evt":"started","data":{"pid":9916,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:13:04.2725158Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T17:13:06.5608664Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T17:13:06.8846598Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
-{"at":"2026-11-17T17:13:07.2896677Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
-{"at":"2026-11-17T17:13:07.2912804Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
-{"at":"2026-11-17T17:13:07.3316796Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
-{"at":"2026-11-17T17:13:07.3823847Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-3D31A85F"}}
-{"at":"2026-11-17T17:13:07.3833165Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-3D31A85F"}}
-{"at":"2026-11-17T17:13:07.5857687Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Maple Courier","amount_cents":285807,"date":"2026-03-31","memo":"OP-3D31A85F"}}
-{"at":"2026-11-17T17:13:09.5546886Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:53:23.9187774Z","evt":"created","data":{"seed":141,"flags":[],"rows":41,"look_alike_pair":["TX-0030","TX-0012"]}}
+{"at":"2026-11-17T17:53:23.9260318Z","evt":"started","data":{"pid":6332,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:53:27.6933085Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:53:30.3426906Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:53:30.6902335Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
+{"at":"2026-11-17T17:53:31.1292878Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
+{"at":"2026-11-17T17:53:31.1314010Z","evt":"dialog_field_changed","data":{"field":"amount","text":"2,858.07"}}
+{"at":"2026-11-17T17:53:31.1884163Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:53:31.2618472Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-80C4F947"}}
+{"at":"2026-11-17T17:53:31.2631645Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-80C4F947"}}
+{"at":"2026-11-17T17:53:31.5555577Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Maple Courier","amount_cents":285807,"date":"2026-03-31","memo":"OP-80C4F947"}}
+{"at":"2026-11-17T17:53:33.7322317Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
