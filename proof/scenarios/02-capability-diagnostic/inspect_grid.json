@@ -2,7 +2,7 @@
   "ok": true,
   "result": {
     "window": {
-      "pid": 7020,
+      "pid": 4020,
       "title": "Payables Ledger - Synthetic Co.",
       "exe": "LedgerApp.exe",
       "dpi": 96
@@ -94,8 +94,8 @@
     ],
     "observations": [
       "route lock acquired after 0 ms",
-      "pid 7020 integrity high (0x3000), this server high (0x3000)",
-      "attached to \u0027Payables Ledger - Synthetic Co.\u0027 pid 7020 started 2026-11-17T16:59:51.4761211Z, dpi 96",
+      "pid 4020 integrity high (0x3000), this server high (0x3000)",
+      "attached to \u0027Payables Ledger - Synthetic Co.\u0027 pid 4020 started 2026-11-17T17:10:02.4903754Z, dpi 96",
       "diagnostic: UIA/grid=NOT_AVAILABLE; UIA/toolbar=NOT_AVAILABLE; UIA/search box=AVAILABLE; MSAA/grid=NOT_AVAILABLE; Win32 messages/grid=NOT_AVAILABLE; Keyboard/grid and toolbar=CONFIGURED",
       "header read: Date | Ref # | Account | Type | Amount | Balance | Status",
       "geometry: 7 columns, 21 full rows of 23px, header bottom at 25px, selected row none",
@@ -107,7 +107,7 @@
     "refusal_code": null,
     "refusal_reason": null,
     "captures": [
-      "608-001-inspect-grid.png"
+      "8328-001-inspect-grid.png"
     ]
   }
 }

@@ -8,10 +8,10 @@ A prototype, not a production reference. Synthetic data only. No model is called
 
 The evidence comes from one GitHub Actions run on hosted `windows-2025` runners: real desktop, real `CopyFromScreen` captures, real `SendInput` clicks and keys, a separate MCP client process.
 
-- Run: [windows-proof run 44131658109](https://github.com/fred1433/painted-grid-automation/actions/runs/44131658109) (four jobs green: `proof`, `guard-tests`, `dpi-150`, `run-demo-script`)
-- Commit: `d1b3aaa253e135e2e866b4793c0f0180577f861f`
+- Run: [windows-proof run 44133674369](https://github.com/fred1433/painted-grid-automation/actions/runs/44133674369) (four jobs green: `proof`, `guard-tests`, `dpi-150`, `run-demo-script`)
+- Commit: `a81481c3958fa355efec6b2b56d53c03c44c9c89`
 - Evidence, readable without installing anything: [`proof/`](proof/) (summary, MCP transcripts, server step journals, captures, the application's own journal, the guard tests' output)
-- Replay on a Windows machine with the .NET 8 SDK: `./run-demo.ps1` (all scenarios, about 7 minutes after the build on the hosted runner, hands off the mouse and keyboard) or `./run-demo.ps1 -Only 14`
+- Replay on a Windows machine with the .NET 8 SDK: `./run-demo.ps1` (all scenarios, about 6 minutes after the build on the hosted runner, hands off the mouse and keyboard) or `./run-demo.ps1 -Only 14`
 
 ## Three outcomes, each backed by a test
 
@@ -211,7 +211,7 @@ I would use a computer-use agent for supervised exploration: finding where thing
 - **Two identical payments really wanted** on the same account, amount and date: refused as the same operation.
 - **Two different vendors whose names fold to the same key** (they differ only by accents, punctuation or `O`/`0`): one `UNKNOWN` on one blocks the other too, until reconciled. That is the side this errs on.
 - **An OCR error made identically by both readers that also matches the pixels**: not detectable here. In this run every accepted Ref #, Date and Amount matched its re-drawing pixel for pixel (211 checks, 0 differing pixels); the look-alike amount of scenario `18` differed in 220 of 258 ink pixels.
-- **Speed.** Median per call on the runner: `prepare_payment` 2.8 s, `execute_payment` 6.1 s (a full scan, a verified selection, the dialog, a verified read-back). On the 501-row grid of `27`, one full scan takes 15 s. Not optimised.
+- **Speed.** Median per call on the runner: `prepare_payment` 2.4 s, `execute_payment` 5.5 s (a full scan, a verified selection, the dialog, a verified read-back). On the 501-row grid of `27`, one full scan takes 13 s. Not optimised.
 - **Long runs**: memory, handle leaks and behaviour over hours were not measured.
 - Chrome and computer use above are opinions, with no code here.
 

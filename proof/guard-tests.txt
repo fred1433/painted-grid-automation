@@ -17,4 +17,4 @@ PASS Values_one_open_operation_per_invoice
 PASS Values_prepare_never_rebinds_an_existing_operation
 PASS Values_same_row_under_another_reference_is_refused
 18/18 guard tests passed
-commit: d1b3aaa253e135e2e866b4793c0f0180577f861f
+commit: a81481c3958fa355efec6b2b56d53c03c44c9c89

@@ -1,12 +1,12 @@
-{"at":"2026-11-17T16:59:26.3587353Z","evt":"created","data":{"seed":181,"flags":[],"rows":41,"look_alike_pair":["TX-0030","TX-0031"]}}
-{"at":"2026-11-17T16:59:26.3662197Z","evt":"started","data":{"pid":6056,"loaded":false,"rows":41}}
-{"at":"2026-11-17T16:59:39.2475508Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T16:59:42.6914207Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
-{"at":"2026-11-17T16:59:43.1409728Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
-{"at":"2026-11-17T16:59:43.5700213Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,970.20"}}
-{"at":"2026-11-17T16:59:43.5719919Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,970.20"}}
-{"at":"2026-11-17T16:59:43.6354182Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
-{"at":"2026-11-17T16:59:43.7266227Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-FAF4DC8C"}}
-{"at":"2026-11-17T16:59:43.7279856Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-FAF4DC8C"}}
-{"at":"2026-11-17T16:59:44.0458496Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Granite Facilities","amount_cents":397020,"date":"2026-03-31","memo":"OP-FAF4DC8C"}}
-{"at":"2026-11-17T16:59:46.9840435Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:09:46.4678043Z","evt":"created","data":{"seed":181,"flags":[],"rows":41,"look_alike_pair":["TX-0030","TX-0031"]}}
+{"at":"2026-11-17T17:09:46.4731658Z","evt":"started","data":{"pid":9884,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:09:51.2894464Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:09:53.8723688Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}
+{"at":"2026-11-17T17:09:54.2178999Z","evt":"dialog_opened","data":{"tx":"TX-0019","invoice_ref":"INV-1019"}}
+{"at":"2026-11-17T17:09:54.6229300Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,970.20"}}
+{"at":"2026-11-17T17:09:54.6243503Z","evt":"dialog_field_changed","data":{"field":"amount","text":"3,970.20"}}
+{"at":"2026-11-17T17:09:54.6524824Z","evt":"dialog_field_changed","data":{"field":"date","text":"2026-03-31"}}
+{"at":"2026-11-17T17:09:54.6897443Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-8BD8EE37"}}
+{"at":"2026-11-17T17:09:54.6905385Z","evt":"dialog_field_changed","data":{"field":"memo","text":"OP-8BD8EE37"}}
+{"at":"2026-11-17T17:09:54.8751206Z","evt":"payment_posted","data":{"tx":"TX-0042","invoice_tx":"TX-0019","invoice_ref":"INV-1019","account":"Granite Facilities","amount_cents":397020,"date":"2026-03-31","memo":"OP-8BD8EE37"}}
+{"at":"2026-11-17T17:09:57.0434687Z","evt":"selection_changed","data":{"tx":"TX-0019","source":"mouse"}}

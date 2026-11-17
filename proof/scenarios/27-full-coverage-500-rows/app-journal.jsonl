@@ -1,4 +1,4 @@
-{"at":"2026-11-17T17:04:46.2127774Z","evt":"created","data":{"seed":251,"flags":["dup-far"],"rows":501,"look_alike_pair":["TX-0261","TX-0206"]}}
-{"at":"2026-11-17T17:04:46.2201419Z","evt":"started","data":{"pid":3144,"loaded":false,"rows":501}}
-{"at":"2026-11-17T17:05:03.0295120Z","evt":"selection_changed","data":{"tx":"TX-0278","source":"keyboard"}}
-{"at":"2026-11-17T17:05:19.4546236Z","evt":"selection_changed","data":{"tx":"TX-0430","source":"mouse"}}
+{"at":"2026-11-17T17:14:27.0778642Z","evt":"created","data":{"seed":251,"flags":["dup-far"],"rows":501,"look_alike_pair":["TX-0261","TX-0206"]}}
+{"at":"2026-11-17T17:14:27.0827526Z","evt":"started","data":{"pid":7992,"loaded":false,"rows":501}}
+{"at":"2026-11-17T17:14:42.1489528Z","evt":"selection_changed","data":{"tx":"TX-0278","source":"keyboard"}}
+{"at":"2026-11-17T17:14:57.6446955Z","evt":"selection_changed","data":{"tx":"TX-0430","source":"mouse"}}

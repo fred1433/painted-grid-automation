@@ -1,3 +1,3 @@
-{"at":"2026-11-17T17:03:33.4057227Z","evt":"created","data":{"seed":171,"flags":["inject"],"rows":41,"look_alike_pair":["TX-0003","TX-0022"]}}
-{"at":"2026-11-17T17:03:33.4131332Z","evt":"started","data":{"pid":7704,"loaded":false,"rows":41}}
-{"at":"2026-11-17T17:03:39.1553474Z","evt":"selection_changed","data":{"tx":"TX-0040","source":"mouse"}}
+{"at":"2026-11-17T17:13:20.4631352Z","evt":"created","data":{"seed":171,"flags":["inject"],"rows":41,"look_alike_pair":["TX-0003","TX-0022"]}}
+{"at":"2026-11-17T17:13:20.4682259Z","evt":"started","data":{"pid":5704,"loaded":false,"rows":41}}
+{"at":"2026-11-17T17:13:25.7146733Z","evt":"selection_changed","data":{"tx":"TX-0040","source":"mouse"}}

@@ -1,5 +1,5 @@
-{"at":"2026-11-17T17:05:59.5870732Z","check":"cell drawn \u00271,000.00\u0027, checked as \u00271,000.00\u0027: accepted (0 of 160 ink pixels differ)","ok":true}
-{"at":"2026-11-17T17:05:59.5894467Z","check":"cell drawn \u00271,000.00\u0027, checked as \u00271,200.00\u0027: refused (23 of 168 ink pixels differ)","ok":true}
-{"at":"2026-11-17T17:05:59.5917510Z","check":"cell drawn \u00271,200.00\u0027, checked as \u00271,000.00\u0027: refused (23 of 168 ink pixels differ)","ok":true}
-{"at":"2026-11-17T17:05:59.5930571Z","check":"cell drawn \u00271,200.00\u0027, checked as \u00271,200.00\u0027: accepted (0 of 153 ink pixels differ)","ok":true}
-{"at":"2026-11-17T17:05:59.6015319Z","check":"cell drawn \u00274,211.46\u0027, checked as \u00274,211.48\u0027: refused (15 of 156 ink pixels differ)","ok":true}
+{"at":"2026-11-17T17:15:35.2251796Z","check":"cell drawn \u00271,000.00\u0027, checked as \u00271,000.00\u0027: accepted (0 of 160 ink pixels differ)","ok":true}
+{"at":"2026-11-17T17:15:35.2270274Z","check":"cell drawn \u00271,000.00\u0027, checked as \u00271,200.00\u0027: refused (23 of 168 ink pixels differ)","ok":true}
+{"at":"2026-11-17T17:15:35.2288145Z","check":"cell drawn \u00271,200.00\u0027, checked as \u00271,000.00\u0027: refused (23 of 168 ink pixels differ)","ok":true}
+{"at":"2026-11-17T17:15:35.2297515Z","check":"cell drawn \u00271,200.00\u0027, checked as \u00271,200.00\u0027: accepted (0 of 153 ink pixels differ)","ok":true}
+{"at":"2026-11-17T17:15:35.2363300Z","check":"cell drawn \u00274,211.46\u0027, checked as \u00274,211.48\u0027: refused (15 of 156 ink pixels differ)","ok":true}
