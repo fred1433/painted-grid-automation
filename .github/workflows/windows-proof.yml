@@ -41,6 +41,28 @@ jobs:
           name: proof-run
           path: proof-run
 
+  guard-tests:
+    # Operation store and operator CLI, no desktop needed.
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Guard tests
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force proof-guard | Out-Null
+          dotnet build tests/Guard.Tests/Guard.Tests.csproj -c Release -o out/guard-tests
+          ./out/guard-tests/guard-tests.exe | Tee-Object -FilePath proof-guard/guard-tests.txt
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-guard
+          path: proof-guard
+
   dpi-150:
     runs-on: windows-2025
     timeout-minutes: 30

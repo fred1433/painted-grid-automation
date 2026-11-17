@@ -15,7 +15,7 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         if (opt.Parasite != null) { Application.Run(new ParasiteForm(opt.Parasite.Value)); return 0; }
-        var store = LedgerStore.OpenOrCreate(opt.DataDir, opt.Seed, opt.Flags);
+        var store = LedgerStore.OpenOrCreate(opt.DataDir, opt.Seed, opt.Flags, opt.Rows);
         Application.Run(new MainForm(store, opt));
         return 0;
     }
@@ -26,6 +26,7 @@ public sealed class AppOptions
 {
     public string DataDir = "ledger-data";
     public int Seed = 1;
+    public int Rows = 40;
     public HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase);
     public float RenderScale = 1f;
     public bool DpiUnaware;
@@ -41,6 +42,7 @@ public sealed class AppOptions
             {
                 case "--data": o.DataDir = a[++i]; break;
                 case "--seed": o.Seed = int.Parse(a[++i], CultureInfo.InvariantCulture); break;
+                case "--rows": o.Rows = int.Parse(a[++i], CultureInfo.InvariantCulture); break;
                 case "--flags": foreach (var f in a[++i].Split(',', StringSplitOptions.RemoveEmptyEntries)) o.Flags.Add(f.Trim()); break;
                 case "--render-scale": o.RenderScale = float.Parse(a[++i], CultureInfo.InvariantCulture); break;
                 case "--dpi-unaware": o.DpiUnaware = true; break;

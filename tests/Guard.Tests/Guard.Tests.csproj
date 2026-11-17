@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tests of the operation store and the operator CLI. No UI, no Windows API: they run on any OS with .NET. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <AssemblyName>guard-tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Guard\Guard.csproj" />
+    <ProjectReference Include="..\..\src\LedgerOperator\LedgerOperator.csproj" />
+  </ItemGroup>
+</Project>

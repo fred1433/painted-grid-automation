@@ -54,7 +54,7 @@ public sealed class LedgerGrid : Control
 
     public void Rebuild()
     {
-        IEnumerable<Entry> q = _store.Entries;
+        IEnumerable<Entry> q = _store.Visible;
         if (_filter.Length > 0) q = q.Where(e => e.Account.Contains(_filter, StringComparison.OrdinalIgnoreCase) || e.Ref.Contains(_filter, StringComparison.OrdinalIgnoreCase));
         q = SortMode == "amount"
             ? q.OrderByDescending(e => e.AmountCents).ThenBy(e => e.Ref, StringComparer.Ordinal)
@@ -77,7 +77,7 @@ public sealed class LedgerGrid : Control
     string Cell(Entry e, int c) => c switch
     {
         0 => e.Date, 1 => e.Ref, 2 => e.Account, 3 => e.Type,
-        4 => Display(e, e.AmountCents), 5 => LedgerStore.Money(e.BalanceCents), _ => e.Status,
+        4 => Display(e, e.AmountCents), 5 => LedgerStore.Money(e.BalanceCents), _ => _store.StatusOf(e),
     };
 
     protected override void OnResize(EventArgs e) { base.OnResize(e); Rebuild(); }

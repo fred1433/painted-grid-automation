@@ -21,6 +21,8 @@ public sealed class Entry
     public string? PaidBy { get; set; }
     /// <summary>Display quirk for the OCR counter-example: some glyphs are drawn as look-alike letters.</summary>
     public bool LookAlikeGlyphs { get; set; }
+    /// <summary>Process that posted this payment (null for generated rows). Used by the stale-view flag.</summary>
+    public int? PostedByPid { get; set; }
 }
 
 /// <summary>
@@ -31,6 +33,12 @@ public sealed class LedgerStore
 {
     public List<Entry> Entries { get; private set; } = new();
     public int Seed { get; private set; }
+    /// <summary>
+    /// Flag stale-view: payments posted by an earlier run of the application are saved but not yet shown. Their invoices
+    /// still read Open, on the grid, on the detail panel and for the payment dialog. This is the case where only the
+    /// operation store stands between a retry and a second payment.
+    /// </summary>
+    public bool StaleView { get; private set; }
     readonly string _dir;
     static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
@@ -43,21 +51,21 @@ public sealed class LedgerStore
         "Maple Courier", "Summit Janitorial", "Orchard IT Services", "Cedar Lane Signs", "Pioneer Water",
     };
 
-    public static LedgerStore OpenOrCreate(string dir, int seed, ISet<string> flags)
+    public static LedgerStore OpenOrCreate(string dir, int seed, ISet<string> flags, int rows = 40)
     {
         Directory.CreateDirectory(dir);
-        var s = new LedgerStore(dir) { Seed = seed };
+        var s = new LedgerStore(dir) { Seed = seed, StaleView = flags.Contains("stale-view") };
         string file = Path.Combine(dir, "ledger.json");
         if (File.Exists(file))
         {
             s.Entries = JsonSerializer.Deserialize<List<Entry>>(File.ReadAllText(file)) ?? new();
-            s.Journal("started", new { pid = Environment.ProcessId, loaded = true, rows = s.Entries.Count });
+            s.Journal("started", new { pid = Environment.ProcessId, loaded = true, rows = s.Entries.Count, stale_view = s.StaleView, hidden = s.Entries.Count(s.IsHidden) });
             return s;
         }
         var rng = new Random(seed);
-        var dates = Enumerable.Range(0, 40).Select(i => new DateTime(2026, 2, 2).AddDays(i)).OrderBy(_ => rng.Next()).ToList();
+        var dates = Enumerable.Range(0, rows).Select(i => new DateTime(2026, 2, 2).AddDays(i)).OrderBy(_ => rng.Next()).ToList();
         int tx = 1;
-        for (int i = 0; i < 40; i++)
+        for (int i = 0; i < rows; i++)
         {
             s.Entries.Add(new Entry
             {
@@ -73,6 +81,8 @@ public sealed class LedgerStore
         // A pair of rows with identical Account, Type and Amount: only Date and Ref # tell them apart.
         var byDate = s.Entries.OrderBy(e => e.Date).ToList();
         int a = 3 + rng.Next(4), b = a + 3 + rng.Next(4);
+        // Flag dup-far: the second look-alike row sits 20 rows from the bottom of a long grid.
+        if (flags.Contains("dup-far")) b = rows - 20;
         byDate[b].Account = byDate[a].Account;
         byDate[b].AmountCents = byDate[a].AmountCents;
         // A row whose amount is 1,000.00 and one whose amount is 1,200.00 (used by the OCR counter-examples).
@@ -88,10 +98,16 @@ public sealed class LedgerStore
         s.Entries.Add(hist);
         s.Recompute();
         s.Save();
-        s.Journal("created", new { seed, flags = flags.ToArray(), rows = s.Entries.Count });
+        s.Journal("created", new { seed, flags = flags.ToArray(), rows = s.Entries.Count, look_alike_pair = new[] { byDate[a].Tx, byDate[b].Tx } });
         s.Journal("started", new { pid = Environment.ProcessId, loaded = false, rows = s.Entries.Count });
         return s;
     }
+
+    public bool IsHidden(Entry e) => StaleView && e.Type == "Payment" && e.PostedByPid != null && e.PostedByPid != Environment.ProcessId;
+    public IEnumerable<Entry> Visible => Entries.Where(e => !IsHidden(e));
+    bool PaidOutOfView(Entry e) => StaleView && e.PaidBy != null && Entries.Any(p => p.Tx == e.PaidBy && IsHidden(p));
+    public string StatusOf(Entry e) => PaidOutOfView(e) ? "Open" : e.Status;
+    public string? PaidByOf(Entry e) => PaidOutOfView(e) ? null : e.PaidBy;
 
     public void Recompute()
     {
@@ -106,7 +122,7 @@ public sealed class LedgerStore
     public Entry PostPayment(Entry invoice, long cents, string date, string memo)
     {
         int next = Entries.Select(e => int.Parse(e.Tx[3..], CultureInfo.InvariantCulture)).Max() + 1;
-        var p = new Entry { Tx = $"TX-{next:0000}", Date = date, Ref = "PMT-" + invoice.Ref[4..], Account = invoice.Account, Type = "Payment", AmountCents = -cents, Status = "Posted" };
+        var p = new Entry { Tx = $"TX-{next:0000}", Date = date, Ref = "PMT-" + invoice.Ref[4..], Account = invoice.Account, Type = "Payment", AmountCents = -cents, Status = "Posted", PostedByPid = Environment.ProcessId };
         Entries.Add(p);
         invoice.Status = "Paid";
         invoice.PaidBy = p.Tx;

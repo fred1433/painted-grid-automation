@@ -64,11 +64,15 @@ public static class Program
         ("14-freeze-after-post", "the app freezes after saving the payment: UNKNOWN, restart, new request refused, one payment", FreezeAfterPost),
         ("15-freeze-before-post", "the app freezes before saving: UNKNOWN too (the cost), human reconciliation, then one payment", FreezeBeforePost),
         ("16-driver-crash-after-submit", "the server dies between the submit input and its check: IN_FLIGHT becomes UNKNOWN at restart", CrashAfterSubmit),
-        ("17-intent-journal-failure", "the intent cannot be recorded: no input, approval not consumed", IntentFailure),
+        ("17-intent-journal-failure", "the operation database is read-only on disk: INTENT_NOT_PERSISTED, no input, approval not consumed", IntentFailure),
         ("18-ocr-lookalike-glyphs", "an amount drawn with letter O and letter l: refused rather than written", Lookalike),
         ("19-ocr-dropped-group", "one reader reads 1,000.00 as 100.00 (injected): the readers disagree, refused", DroppedGroup),
         ("20-screen-text-is-data", "a cell that says APPROVE PAYMENT grants nothing", Injection),
         ("21-architecture", "driver and server never reference the application or the verifier", Architecture),
+        ("23-guard-only-defense", "the payment was saved but the restarted app still shows the invoice Open: only UNKNOWN refuses it, whatever the account spelling", GuardOnlyDefense),
+        ("24-second-server-mid-write", "a second server starts while the first is between its intent record and its confirmation: nothing is taken from the first", SecondServerMidWrite),
+        ("26-slow-save-left-alone", "the save takes 8 s with the window answering: UNKNOWN, and the dialog is never cancelled after the Post click", SlowSave),
+        ("27-full-coverage-500-rows", "500 rows, look-alike rows at both ends, scan started from the bottom: every row is read before any click", FullCoverage),
         ("22-dpi-scale", "display scaling 1.5 when the job could set it (GetDpiForWindow = 144), else the named fallback", Dpi),
     };
 
@@ -487,20 +491,129 @@ public static class Program
     static async Task IntentFailure(Ctx c)
     {
         c.StartApp(141);
-        var m = await c.Server(new Dictionary<string, string?> { ["PGA_FAULT_INTENT_WRITE"] = "1" });
+        var m = await c.Server();
         var target = Plain(c.Facts(), 0);
         var prep = await c.Call(m, "prepare_payment", PrepArgs(target));
         var s = prep.Result.GetProperty("summary");
         string op = prep.Str("result", "operation_id");
         string token = c.Approve(op, s.GetProperty("tx_id").GetString()!, s.GetProperty("amount").GetString()!, s.GetProperty("pid").GetInt32());
-        var ex = await c.Call(m, "execute_payment", A(("operation_id", op), ("approval_token", token)));
-        c.Check(ex.IsError && ex.Code == "INTENT_NOT_PERSISTED", $"execute_payment stops with {ex.Code}");
+        // A real write failure: the database file is made read-only on disk. No fault switch in the code under test.
+        File.SetAttributes(c.Db, FileAttributes.ReadOnly);
+        c.Note("operations.db set read-only on disk");
+        CallResult ex;
+        try { ex = await c.Call(m, "execute_payment", A(("operation_id", op), ("approval_token", token))); }
+        finally { File.SetAttributes(c.Db, FileAttributes.Normal); c.Note("operations.db writable again"); }
+        c.Check(ex.IsError && ex.Code == "INTENT_NOT_PERSISTED", $"execute_payment stops with {(ex.Code != "" ? ex.Code : ex.Str("unstructured_error"))}: {ex.Str("message")}");
         c.Check(c.Facts().Payments == 0 && c.Facts().Count("dialog_opened") == 0, "no payment and no dialog: nothing was sent");
-        await c.StopServer(m);
-        var m2 = await c.Server();
-        var ex2 = await c.Call(m2, "execute_payment", A(("operation_id", op), ("approval_token", token)));
-        c.Check(!ex2.IsError && ex2.Str("result", "state") == "CONFIRMED", "the approval was not consumed by the failed attempt: the same token works once the journal is writable");
+        var st = await c.Call(m, "operation_status", A(("operation_id", op)));
+        c.Check(st.Str("result", "state") == "NOT_STARTED", $"the operation is still NOT_STARTED ({st.Str("result", "state")})");
+        var ex2 = await c.Call(m, "execute_payment", A(("operation_id", op), ("approval_token", token)));
+        c.Check(!ex2.IsError && ex2.Str("result", "state") == "CONFIRMED", "the approval was not consumed by the failed attempt: the same token works once the file is writable");
         c.Check(c.Facts().Payments == 1, "exactly 1 payment");
+    }
+
+    static IEnumerable<string> Spellings(string account)
+    {
+        int sp = account.IndexOf(' ');
+        if (sp > 0) { yield return account[..sp] + "  " + account[(sp + 1)..]; yield return account[..sp] + "-" + account[(sp + 1)..]; }
+        yield return account.Replace(" ", "");
+        int o = account.IndexOfAny(new[] { 'o', 'O' });
+        if (o >= 0) yield return account[..o] + "0" + account[(o + 1)..];
+        yield return account + ".";
+    }
+
+    static async Task GuardOnlyDefense(Ctx c)
+    {
+        var (prep, ex, target) = await FrozenWrite(c, 221, "freeze-after-post");
+        string op = prep.Str("result", "operation_id");
+        c.Check(ex.IsError && ex.Str("result", "state") == "UNKNOWN", $"execute_payment returns UNKNOWN: {ex.Str("result", "reason")}");
+        c.Check(c.Facts().PaymentsFor(target.Ref) == 1, "the application saved the payment before freezing (journal: 1)");
+        foreach (var p in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(P.App))) { try { p.Kill(); p.WaitForExit(5000); } catch { } }
+        c.StartApp(221, "stale-view");
+        c.Note("application restarted with stale-view: the saved payment is not shown yet");
+        var m2 = await c.Server();
+        var look = await c.Call(m2, "find_row", A(("invoice_ref", target.Ref)));
+        string shown = look.Result.ValueKind == JsonValueKind.Object && look.Result.GetProperty("candidates").GetArrayLength() == 1
+            ? look.Result.GetProperty("candidates")[0].GetProperty("screen_text").GetProperty("Status").GetString() ?? "" : "";
+        c.Check(shown == "Open", $"on screen after the restart, {target.Ref} reads '{shown}': the screen alone would allow a second payment");
+        var exact = await c.Call(m2, "prepare_payment", PrepArgs(target));
+        c.Check(exact.IsError && exact.Code == "ACCOUNT_BLOCKED_UNKNOWN", $"the same request is refused by the operation store alone: {exact.Code}");
+        c.Frame("guard-only-defense", $"{target.Ref} again after restart (screen: {shown})", $"operation {op} UNKNOWN; the payment is saved but not shown", exact.Code, exact.Str("message"));
+        foreach (var v in Spellings(target.Account))
+        {
+            var r = await c.Call(m2, "prepare_payment", A(("account", v), ("amount", Money(target.AmountCents)), ("pay_date", PayDate), ("invoice_ref", target.Ref)));
+            c.Check(r.IsError && r.Code == "ACCOUNT_BLOCKED_UNKNOWN", $"account written '{v}': {(r.IsError ? r.Code : "accepted as " + r.Str("result", "operation_id") + " " + r.Str("result", "state"))}");
+        }
+        var (_, list, _) = c.Operator($"list --db \"{c.Db}\"");
+        c.Check(list.Trim().Split('\n').Length == 1, $"the store holds one operation only: {list.Trim().Replace("\n", " / ")}");
+        c.Check(c.Facts().PaymentsFor(target.Ref) == 1, "the application journal still holds exactly 1 payment");
+    }
+
+    static async Task SecondServerMidWrite(Ctx c)
+    {
+        c.StartApp(231);
+        var a = await c.Server();
+        var x = Plain(c.Facts(), 0);
+        var prep = await c.Call(a, "prepare_payment", PrepArgs(x));
+        c.Check(!prep.IsError, "server A prepared the payment");
+        string op = prep.Str("result", "operation_id");
+        var s = prep.Result.GetProperty("summary");
+        string token = c.Approve(op, s.GetProperty("tx_id").GetString()!, s.GetProperty("amount").GetString()!, s.GetProperty("pid").GetInt32());
+        var running = c.Call(a, "execute_payment", A(("operation_id", op), ("approval_token", token)));
+        bool inFlight = false;
+        for (int i = 0; i < 200 && !inFlight && !running.IsCompleted; i++) inFlight = c.Operator($"show --db \"{c.Db}\" --op {op}").Out.Contains(" IN_FLIGHT ");
+        c.Check(inFlight, "operations.db holds IN_FLIGHT for A's operation (A is between its intent record and its confirmation)");
+        var b = await c.Server();
+        c.Note("server B started while A is IN_FLIGHT");
+        var st = c.Call(b, "operation_status", A(("operation_id", op)));
+        var ra = await running;
+        var rb = await st;
+        c.Check(!ra.IsError && ra.Str("result", "state") == "CONFIRMED", $"A confirms its own operation: {ra.Str("result", "state")} {ra.Code}");
+        c.Check(rb.Str("result", "state") == "CONFIRMED", $"B reads {rb.Str("result", "state")}");
+        var starts = File.ReadAllLines(Path.Combine(c.Evidence, "steps.jsonl")).Where(l => l.Contains("\"server_start\"")).ToList();
+        c.Check(starts.Count == 2 && starts.All(l => l.Contains("\"recovered_in_flight_to_unknown\":0")), $"no server start turned A's live operation into UNKNOWN: {string.Join(" | ", starts.Select(l => l.Contains("\"recovered_in_flight_to_unknown\":0") ? "0" : "recovered"))}");
+        var hist = c.Operator($"show --db \"{c.Db}\" --op {op}").Out;
+        c.Check(!hist.Contains("state_unknown") && !hist.Contains("IN_FLIGHT at startup"), "the operation's history holds no UNKNOWN step");
+        c.Check(c.Facts().Payments == 1, "exactly 1 payment");
+    }
+
+    static async Task SlowSave(Ctx c)
+    {
+        c.StartApp(241, "slow-post");
+        var m = await c.Server();
+        var x = Plain(c.Facts(), 0);
+        var prep = await c.Call(m, "prepare_payment", PrepArgs(x));
+        c.Check(!prep.IsError, "prepare_payment succeeded");
+        var ex = await ApproveAndExecute(c, m, prep);
+        c.Check(ex.IsError && ex.Str("result", "state") == "UNKNOWN", $"execute_payment returns UNKNOWN: {ex.Str("result", "reason")}");
+        c.Check(c.Facts().Count("dialog_cancelled") == 0, "the dialog was not cancelled after the Post click (no Escape sent)");
+        for (int i = 0; i < 60 && c.Facts().PaymentsFor(x.Ref) == 0; i++) Thread.Sleep(250);
+        c.Check(c.Facts().PaymentsFor(x.Ref) == 1 && c.Facts().Count("dialog_cancelled") == 0, "the slow save completed on its own: exactly 1 payment, dialog never cancelled");
+        c.Frame("slow-save-left-alone", $"{x.Ref} / {prep.Str("result", "summary", "tx_id")}", "dialog still open 6 s after Post, no error shown", ex.Str("result", "state"), ex.Str("result", "reason"));
+        var again = await c.Call(m, "prepare_payment", PrepArgs(x));
+        c.Check(again.IsError && again.Code == "ACCOUNT_BLOCKED_UNKNOWN", $"the same payment is refused until a human reconciles: {again.Code}");
+    }
+
+    static async Task FullCoverage(Ctx c)
+    {
+        var app = c.StartApp(251, "dup-far", extra: "--rows 500");
+        var m = await c.Server();
+        var f = c.Facts();
+        var byDate = f.ByDate;
+        var pair = Duplicates(f);
+        int far = pair.Count == 2 ? byDate.FindIndex(r => r.Tx == pair[1].Tx) : -1;
+        c.Check(pair.Count == 2 && far >= 470, $"500 rows; look-alike pair at rows {(pair.Count == 2 ? byDate.FindIndex(r => r.Tx == pair[0].Tx) : -1)} and {far}: {string.Join(" / ", pair.Select(r => $"{r.Ref} {r.Account} {Money(r.AmountCents)}"))}");
+        if (pair.Count != 2) return;
+        int clicks = c.Facts().MouseSelections;
+        var noRef = await c.Call(m, "prepare_payment", PrepArgs(pair[0], withRef: false));
+        c.Check(noRef.IsError && noRef.Code == "AMBIGUOUS_TARGET", $"without the reference, the look-alike row {far} rows down is found: {(noRef.IsError ? noRef.Code + " " + noRef.Str("message") : "accepted " + noRef.Str("result", "summary", "tx_id"))}");
+        c.Check(c.Facts().MouseSelections == clicks, "no click for the ambiguous request");
+        c.KeyToApp(app, 0x23); // End: the grid now shows its last rows
+        c.Note("End pressed: the scan starts from the bottom of the grid");
+        var top = byDate.Take(12).First(r => r.Type == "Invoice" && r.Status == "Open" && r.AmountCents != 100_000 && r.AmountCents != 120_000 && pair.All(p => p.Account != r.Account || p.AmountCents != r.AmountCents));
+        var prep = await c.Call(m, "prepare_payment", PrepArgs(top));
+        c.Check(!prep.IsError && prep.Str("result", "summary", "tx_id") == top.Tx, $"from the bottom, a row near the top ({top.Ref}, row {byDate.IndexOf(top)}) is found and selected: {(prep.IsError ? prep.Code + " " + prep.Str("message") : prep.Str("result", "summary", "tx_id"))}");
+        c.Check(prep.Body.ToString().Contains("all 500 rows"), "the decision records that all 500 rows were read before the click");
     }
 
     static async Task Lookalike(Ctx c)

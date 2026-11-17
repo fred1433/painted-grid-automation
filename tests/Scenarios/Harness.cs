@@ -101,7 +101,10 @@ public sealed class Ctx : IAsyncDisposable
     {
         var sw = Stopwatch.StartNew();
         var res = await c.CallToolAsync(tool, args);
-        var body = res.StructuredContent ?? JsonDocument.Parse(((TextContentBlock)res.Content[0]).Text).RootElement;
+        string text = res.Content.Count > 0 && res.Content[0] is TextContentBlock tb ? tb.Text : "";
+        JsonElement body;
+        if (res.StructuredContent is { } sc) body = sc;
+        else { try { body = JsonDocument.Parse(text).RootElement; } catch (JsonException) { body = JsonSerializer.SerializeToElement(new { ok = false, code = "", unstructured_error = text }); } }
         var r = new CallResult(res.IsError == true, body.Clone(), tool);
         var shown = args.ToDictionary(k => k.Key, k => k.Key == "approval_token" && k.Value != null ? "(token)" : k.Value);
         _transcript.WriteLine(JsonSerializer.Serialize(new { at = DateTime.UtcNow.ToString("O"), request = new { tool, arguments = shown }, ms = sw.ElapsedMilliseconds, is_error = r.IsError, response = r.Body }));

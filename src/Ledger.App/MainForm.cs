@@ -44,7 +44,7 @@ public sealed class MainForm : Form
         searchPanel.Controls.Add(label);
         searchPanel.Controls.Add(_search);
 
-        _detail = new DetailPanel(s) { Name = "detailPanel", Dock = DockStyle.Bottom, Height = (int)(46 * s) };
+        _detail = new DetailPanel(s, store) { Name = "detailPanel", Dock = DockStyle.Bottom, Height = (int)(46 * s) };
 
         var host = new Panel { Name = "gridHost", Dock = DockStyle.Fill };
         _grid = new LedgerGrid(store, s, opt.Seed) { Name = "ledgerGrid", Dock = DockStyle.Fill };
@@ -98,7 +98,7 @@ public sealed class MainForm : Form
     void OpenPayment()
     {
         var sel = _grid.Selected;
-        if (sel == null || sel.Type != "Invoice" || sel.Status != "Open") { System.Media.SystemSounds.Beep.Play(); _store.Journal("dialog_refused", new { tx = sel?.Tx }); return; }
+        if (sel == null || sel.Type != "Invoice" || _store.StatusOf(sel) != "Open") { System.Media.SystemSounds.Beep.Play(); _store.Journal("dialog_refused", new { tx = sel?.Tx }); return; }
         _store.Journal("dialog_opened", new { tx = sel.Tx, invoice_ref = sel.Ref });
         using var dlg = new PaymentDialog(sel, _store, _opt);
         var r = dlg.ShowDialog(this);
@@ -161,10 +161,11 @@ public sealed class PaintedToolbar : Control
 public sealed class DetailPanel : Control
 {
     readonly float _s;
+    readonly LedgerStore _store;
     Entry? _e;
-    public DetailPanel(float s)
+    public DetailPanel(float s, LedgerStore store)
     {
-        _s = s;
+        _s = s; _store = store;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
         BackColor = Color.FromArgb(250, 248, 243);
     }
@@ -178,8 +179,8 @@ public sealed class DetailPanel : Control
         g.DrawLine(line, 0, 0, Width, 0);
         using var f = new Font("Segoe UI", 15f * _s, GraphicsUnit.Pixel);
         if (_e == null) { TextRenderer.DrawText(g, "No row selected", f, new Point((int)(12 * _s), (int)(12 * _s)), Color.FromArgb(120, 112, 100)); return; }
-        var parts = new List<string> { _e.Tx, _e.Ref, _e.Account, LedgerGrid.Display(_e, _e.AmountCents) + " USD", _e.Status };
-        if (_e.PaidBy != null) parts.Add("paid by " + _e.PaidBy);
+        var parts = new List<string> { _e.Tx, _e.Ref, _e.Account, LedgerGrid.Display(_e, _e.AmountCents) + " USD", _store.StatusOf(_e) };
+        if (_store.PaidByOf(_e) is { } by) parts.Add("paid by " + by);
         int x = (int)(12 * _s);
         foreach (var p in parts)
         {
