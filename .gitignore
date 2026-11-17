@@ -1,0 +1,7 @@
+bin/
+obj/
+out/
+probe-out/
+tessdata/
+.vs/
+*.user

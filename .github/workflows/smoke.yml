@@ -1,0 +1,34 @@
+name: smoke
+on:
+  workflow_dispatch:
+  push:
+    paths: ['probe/**', '.github/workflows/smoke.yml']
+jobs:
+  probe:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Versions
+        shell: pwsh
+        run: |
+          Write-Host "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
+          dotnet --info | Select-Object -First 20
+      - name: Pinned OCR model
+        shell: pwsh
+        run: ./probe/fetch-tessdata.ps1
+      - name: Build
+        shell: pwsh
+        run: |
+          dotnet build probe/ProbeApp/ProbeApp.csproj -c Release -o out/app
+          dotnet build probe/ProbeDriver/ProbeDriver.csproj -c Release -o out/driver
+      - name: Probe the real desktop
+        shell: pwsh
+        run: ./out/driver/ProbeDriver.exe ./out/app/ProbeApp.exe ./probe-out ./tessdata
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: probe-evidence
+          path: probe-out
